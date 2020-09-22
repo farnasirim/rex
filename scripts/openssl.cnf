@@ -1,0 +1,55 @@
+[ req ]
+default_bits        = 4096
+distinguished_name = dn
+string_mask         = utf8only
+prompt = no
+default_md          = sha256
+x509_extensions     = ca_ex
+
+[ dn ]
+countryName                     = Country Name (2 letter code)
+stateOrProvinceName             = State or Province Name
+localityName                    = Locality Name
+0.organizationName              = Organization Name
+organizationalUnitName          = Organizational Unit Name
+commonName                      = Common Name (required)
+
+[ policy_strict ]
+countryName             = match
+stateOrProvinceName     = match
+organizationName        = match
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
+
+[ca_ex ]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always, issuer
+basicConstraints = critical,CA:true
+keyUsage = critical, cRLSign, digitalSignature, keyCertSign
+
+[ client_cert ]
+basicConstraints = CA:FALSE
+nsCertType = client
+nsComment = "OpenSSL Generated Client Certificate"
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer
+keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth
+
+[ server_cert ]
+basicConstraints = CA:FALSE
+nsCertType = server
+nsComment = "OpenSSL Generated Server Certificate"
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer:always
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = localhost
+IP.1 = ::1
+IP.2 = 127.0.0.1
+
+# Only sign matching certs

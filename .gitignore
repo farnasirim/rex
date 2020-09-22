@@ -2,3 +2,6 @@
 /rexd
 /proto/rex.pb.go
 /proto/rex_grpc.pb.go
+/scripts/*
+!/scripts/openssl.cnf
+!/scripts/gen_certs.sh
