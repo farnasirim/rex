@@ -1,0 +1,19 @@
+syntax = "proto3";
+package proto;
+
+import "google/protobuf/empty.proto";
+option go_package = "github.com/farnasirim/rex/proto";
+
+service Rex {
+  // Exec executes a specified command and returns the result of *starting*
+  // the execution of the command.
+  rpc Exec(ExecRequest) returns (google.protobuf.Empty) {}
+}
+
+message ExecRequest {
+  // path is the absolute or relative (to server dir) path to an executable
+  string path = 1;
+  // args is a list of command line args that will be passed to the
+  // executable upon execution.
+  repeated string args = 2;
+}

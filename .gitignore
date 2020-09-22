@@ -1,3 +1,4 @@
 /rex
 /rexd
-
+/proto/rex.pb.go
+/proto/rex_grpc.pb.go
