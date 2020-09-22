@@ -21,10 +21,11 @@ func (c *Client) Exec(path string, args ...string) error {
 		Path: path,
 		Args: args,
 	}
-	_, err := c.grpcClient.Exec(context.Background(), req)
-	if st, ok := status.FromError(err); ok {
-		log.Errorln(err.Error())
-		return errFromCode(st.Code())
+	if _, err := c.grpcClient.Exec(context.Background(), req); err != nil {
+		if st, ok := status.FromError(err); ok {
+			log.Errorln(err.Error())
+			return errFromCode(st.Code())
+		}
 	}
 
 	return nil

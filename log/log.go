@@ -20,10 +20,10 @@ const (
 )
 
 var levelToIndicator = map[int]string{
-	LevelFatal: "[F] ",
-	LevelError: "[E] ",
-	LevelPrint: "[P] ",
-	LevelDebug: "[D] ",
+	LevelFatal: "[F]",
+	LevelError: "[E]",
+	LevelPrint: "[P]",
+	LevelDebug: "[D]",
 }
 
 type logFunc func(...interface{})
@@ -71,7 +71,7 @@ func Printf(format string, v ...interface{}) {
 
 // Debugln calls log.Debugln if log level is at least Debug
 func Debugln(v ...interface{}) {
-	logWithFunc(LevelDebug, log.Print, v...)
+	logWithFunc(LevelDebug, log.Println, v...)
 }
 
 // Debugf calls log.Debugf if log level is at least Debug

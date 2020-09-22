@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/farnasirim/rex"
+	"github.com/farnasirim/rex/log"
 	"github.com/farnasirim/rex/proto"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
@@ -19,10 +20,12 @@ type Server struct {
 
 // Exec implements the Exec function from the Rex GRPC api.
 func (s *Server) Exec(ctx context.Context, req *proto.ExecRequest) (*empty.Empty, error) {
-
-	err := status.Error(codes.Unimplemented,
-		errFromCode(codes.Unimplemented).Error())
-	return &empty.Empty{}, err
+	log.Debugln("In grpc.Exec")
+	if err := s.ps.Exec(req.Path, req.Args...); err != nil {
+		err := status.Error(codes.Internal, err.Error())
+		return nil, err
+	}
+	return &empty.Empty{}, nil
 }
 
 // NewServer creates a new Server capable of serving its API
