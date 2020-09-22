@@ -1,17 +1,52 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"flag"
+	"io/ioutil"
+
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	rex_grpc "github.com/farnasirim/rex/grpc"
 	"github.com/farnasirim/rex/log"
 )
 
+func readFileOrFatal(filepath string) []byte {
+	content, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		log.Fatalf("Failed to read %s: %s\n", filepath, err.Error())
+	}
+	return content
+}
+
 func main() {
 	log.SetLogLevel(log.LevelDebug)
 
+	flag.Parse()
+
+	caPool := x509.NewCertPool()
+	if ok := caPool.AppendCertsFromPEM(readFileOrFatal("scripts/ca.crt")); !ok {
+		log.Fatalln("CA cert malformed")
+	}
+
+	cert, err := tls.LoadX509KeyPair("scripts/client.pem", "scripts/client.key")
+	if err != nil {
+		log.Fatalf("Failed to load key pair: %s\n", err.Error())
+	}
+
+	config := &tls.Config{
+		// MinVersion:         tls.VersionTLS13,
+		InsecureSkipVerify: false,
+		RootCAs:            caPool,
+		Certificates:       []tls.Certificate{cert},
+	}
+
+	tlsCredentials := credentials.NewTLS(config)
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithInsecure())
+
+	opts = append(opts, grpc.WithTransportCredentials(tlsCredentials))
 	conn, err := grpc.Dial("localhost:9090", opts...)
 	if err != nil {
 		log.Fatalln(err.Error())
@@ -25,8 +60,31 @@ func main() {
 	client := rex_grpc.NewClient(conn)
 
 	log.Debugln("Created new client")
+	if flag.NArg() > 1 {
+		action := flag.Arg(0)
+		rest := flag.Args()[1:]
 
-	if err := client.Exec("ls", "~"); err != nil {
-		log.Fatalln(err.Error())
+		switch action {
+		case "exec":
+			if err := client.Exec(rest[0], rest[1:]...); err != nil {
+				log.Fatalln(err.Error())
+			}
+			break
+		case "kill":
+			log.Fatalln("Not implemented")
+			break
+		case "ps":
+			log.Fatalln("Not implemented")
+			break
+		case "get":
+			log.Fatalln("Not implemented")
+			break
+		case "read":
+			log.Fatalln("Not implemented")
+			break
+		}
+	} else {
+		log.Fatalln("invalid/missing action")
 	}
+
 }
