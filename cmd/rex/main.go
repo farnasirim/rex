@@ -44,10 +44,8 @@ func main() {
 	}
 
 	tlsCredentials := credentials.NewTLS(config)
-	var opts []grpc.DialOption
-
-	opts = append(opts, grpc.WithTransportCredentials(tlsCredentials))
-	conn, err := grpc.Dial("localhost:9090", opts...)
+	conn, err := grpc.Dial("localhost:9090",
+		grpc.WithTransportCredentials(tlsCredentials))
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
