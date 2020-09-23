@@ -26,6 +26,7 @@ func (c *Client) Exec(path string, args ...string) error {
 			log.Errorln(err.Error())
 			return errFromCode(st.Code())
 		}
+		return err
 	}
 
 	return nil
