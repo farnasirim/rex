@@ -3,8 +3,9 @@ package grpc
 import (
 	"context"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/farnasirim/rex"
-	"github.com/farnasirim/rex/log"
 	"github.com/farnasirim/rex/proto"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"

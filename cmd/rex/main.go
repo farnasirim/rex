@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	rex_grpc "github.com/farnasirim/rex/grpc"
-	"github.com/farnasirim/rex/log"
+	log "github.com/sirupsen/logrus"
 )
 
 func readFileOrFatal(filepath string) []byte {
@@ -22,7 +22,7 @@ func readFileOrFatal(filepath string) []byte {
 }
 
 func main() {
-	log.SetLogLevel(log.LevelDebug)
+	log.SetLevel(log.DebugLevel)
 
 	flag.Parse()
 

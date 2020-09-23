@@ -9,9 +9,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	log "github.com/sirupsen/logrus"
+
 	rex_grpc "github.com/farnasirim/rex/grpc"
 	"github.com/farnasirim/rex/linux"
-	"github.com/farnasirim/rex/log"
 	"github.com/farnasirim/rex/proto"
 )
 
@@ -25,7 +26,7 @@ func readFileOrFatal(filepath string) []byte {
 
 // TODO: lots of duplication in rex/main.go and rexd/main.go
 func main() {
-	log.SetLogLevel(log.LevelDebug)
+	log.SetLevel(log.DebugLevel)
 
 	lis, err := net.Listen("tcp", "localhost:9090")
 	if err != nil {

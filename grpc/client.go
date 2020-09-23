@@ -5,7 +5,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 
-	"github.com/farnasirim/rex/log"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/farnasirim/rex/proto"
 )
 
