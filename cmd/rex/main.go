@@ -16,7 +16,7 @@ import (
 func readFileOrFatal(filepath string) []byte {
 	content, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		log.Fatalf("Failed to read %s: %s\n", filepath, err.Error())
+		log.Fatalf("Failed to read %s: %v\n", filepath, err)
 	}
 	return content
 }
@@ -33,7 +33,7 @@ func main() {
 
 	cert, err := tls.LoadX509KeyPair("scripts/client.pem", "scripts/client.key")
 	if err != nil {
-		log.Fatalf("Failed to load key pair: %s\n", err.Error())
+		log.Fatalf("Failed to load key pair: %v\n", err)
 	}
 
 	config := &tls.Config{
