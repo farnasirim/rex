@@ -43,7 +43,7 @@ func main() {
 	}
 
 	config := &tls.Config{
-		// MinVersion:         tls.VersionTLS13,
+		MinVersion:         tls.VersionTLS13,
 		InsecureSkipVerify: false,
 		RootCAs:            caPool,
 		Certificates:       []tls.Certificate{cert},
