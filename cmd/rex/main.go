@@ -80,9 +80,12 @@ func main() {
 		case "read":
 			log.Fatalln("Not implemented")
 			break
+		default:
+			log.Fatalf("Invalid action: %q", action)
+			break
 		}
 	} else {
-		log.Fatalln("invalid/missing action")
+		log.Fatalln("missing action")
 	}
 
 }
