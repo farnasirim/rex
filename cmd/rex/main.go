@@ -4,13 +4,16 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"flag"
+	"fmt"
 	"io/ioutil"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	rex_grpc "github.com/farnasirim/rex/grpc"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/farnasirim/rex"
+	rex_grpc "github.com/farnasirim/rex/grpc"
 )
 
 func readFileOrFatal(filepath string) []byte {
@@ -55,7 +58,7 @@ func main() {
 		}
 	}()
 
-	client := rex_grpc.NewClient(conn)
+	var client rex.Service = rex_grpc.NewClient(conn)
 
 	log.Debugln("Created new client")
 	if flag.NArg() > 1 {
@@ -64,9 +67,11 @@ func main() {
 
 		switch action {
 		case "exec":
-			if err := client.Exec(rest[0], rest[1:]...); err != nil {
+			processUUID, err := client.Exec(rest[0], rest[1:]...)
+			if err != nil {
 				log.Fatalln(err.Error())
 			}
+			fmt.Println(processUUID)
 			break
 		case "kill":
 			log.Fatalln("Not implemented")

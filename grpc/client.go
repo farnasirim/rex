@@ -2,6 +2,9 @@ package grpc
 
 import (
 	"golang.org/x/net/context"
+
+	"github.com/google/uuid"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 
@@ -17,20 +20,21 @@ type Client struct {
 
 // Exec implementes rex.Service.Exec by sending it over GRPC to a remote
 // implementation of rex.Service
-func (c *Client) Exec(path string, args ...string) error {
+func (c *Client) Exec(path string, args ...string) (uuid.UUID, error) {
 	req := &proto.ExecRequest{
 		Path: path,
 		Args: args,
 	}
-	if _, err := c.grpcClient.Exec(context.Background(), req); err != nil {
+	execResponse, err := c.grpcClient.Exec(context.Background(), req)
+	if err != nil {
 		if st, ok := status.FromError(err); ok {
 			log.Errorln(err.Error())
-			return errFromCode(st.Code())
+			return uuid.Nil, errFromCode(st.Code())
 		}
-		return err
+		return uuid.Nil, err
 	}
 
-	return nil
+	return uuid.Must(uuid.Parse(execResponse.ProcessUUID)), nil
 }
 
 // NewClient creates a new GRPC Client

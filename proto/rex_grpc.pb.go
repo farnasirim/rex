@@ -4,7 +4,6 @@ package proto
 
 import (
 	context "context"
-	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -20,7 +19,7 @@ const _ = grpc.SupportPackageIsVersion6
 type RexClient interface {
 	// Exec executes a specified command and returns the result of *starting*
 	// the execution of the command.
-	Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (*ExecResponse, error)
 }
 
 type rexClient struct {
@@ -31,8 +30,8 @@ func NewRexClient(cc grpc.ClientConnInterface) RexClient {
 	return &rexClient{cc}
 }
 
-func (c *rexClient) Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *rexClient) Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (*ExecResponse, error) {
+	out := new(ExecResponse)
 	err := c.cc.Invoke(ctx, "/proto.Rex/Exec", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -46,7 +45,7 @@ func (c *rexClient) Exec(ctx context.Context, in *ExecRequest, opts ...grpc.Call
 type RexServer interface {
 	// Exec executes a specified command and returns the result of *starting*
 	// the execution of the command.
-	Exec(context.Context, *ExecRequest) (*empty.Empty, error)
+	Exec(context.Context, *ExecRequest) (*ExecResponse, error)
 	mustEmbedUnimplementedRexServer()
 }
 
@@ -54,7 +53,7 @@ type RexServer interface {
 type UnimplementedRexServer struct {
 }
 
-func (*UnimplementedRexServer) Exec(context.Context, *ExecRequest) (*empty.Empty, error) {
+func (*UnimplementedRexServer) Exec(context.Context, *ExecRequest) (*ExecResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Exec not implemented")
 }
 func (*UnimplementedRexServer) mustEmbedUnimplementedRexServer() {}
