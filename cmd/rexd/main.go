@@ -54,7 +54,8 @@ func main() {
 
 	tlsCredentials := credentials.NewTLS(config)
 
-	grpcServer := grpc.NewServer(grpc.Creds(tlsCredentials))
+	grpcServer := grpc.NewServer(grpc.Creds(tlsCredentials),
+		grpc.UnaryInterceptor(rex_grpc.ErrorMarshallerInterceptor))
 	linuxProcessServer := localexec.NewServer()
 	rexGRPCServer := rex_grpc.NewServer(linuxProcessServer)
 

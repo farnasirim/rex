@@ -3,9 +3,11 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"os/exec"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -48,7 +50,8 @@ func main() {
 
 	tlsCredentials := credentials.NewTLS(config)
 	conn, err := grpc.Dial("localhost:9090",
-		grpc.WithTransportCredentials(tlsCredentials))
+		grpc.WithTransportCredentials(tlsCredentials),
+		grpc.WithUnaryInterceptor(rex_grpc.ErrorUnmarshallerInterceptor))
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
@@ -69,6 +72,9 @@ func main() {
 		case "exec":
 			processUUID, err := client.Exec(rest[0], rest[1:]...)
 			if err != nil {
+				if errors.Is(err, exec.ErrNotFound) {
+					log.Debugln("Got exec.ErrNotFound")
+				}
 				log.Fatalln(err.Error())
 			}
 			fmt.Println(processUUID)

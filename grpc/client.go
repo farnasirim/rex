@@ -2,13 +2,12 @@ package grpc
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/farnasirim/rex/proto"
 )
@@ -25,11 +24,11 @@ func (c *Client) Exec(path string, args ...string) (uuid.UUID, error) {
 		Path: path,
 		Args: args,
 	}
+
 	execResponse, err := c.grpcClient.Exec(context.Background(), req)
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
-			log.Errorln(err.Error())
-			return uuid.Nil, errFromCode(st.Code())
+			return uuid.Nil, errors.New(st.Message())
 		}
 		return uuid.Nil, err
 	}
