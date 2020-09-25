@@ -34,7 +34,7 @@ func (c *Client) Exec(path string, args ...string) (uuid.UUID, error) {
 		return uuid.Nil, err
 	}
 
-	return uuid.Must(uuid.Parse(execResponse.ProcessUUID)), nil
+	return uuid.Parse(execResponse.ProcessUUID)
 }
 
 // NewClient creates a new GRPC Client
