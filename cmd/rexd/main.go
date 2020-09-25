@@ -12,7 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	rex_grpc "github.com/farnasirim/rex/grpc"
-	"github.com/farnasirim/rex/os"
+	"github.com/farnasirim/rex/localexec"
 	"github.com/farnasirim/rex/proto"
 )
 
@@ -55,7 +55,7 @@ func main() {
 	tlsCredentials := credentials.NewTLS(config)
 
 	grpcServer := grpc.NewServer(grpc.Creds(tlsCredentials))
-	linuxProcessServer := os.NewServer()
+	linuxProcessServer := localexec.NewServer()
 	rexGRPCServer := rex_grpc.NewServer(linuxProcessServer)
 
 	proto.RegisterRexServer(grpcServer, rexGRPCServer)
