@@ -72,22 +72,16 @@ func main() {
 				log.Fatalln(err.Error())
 			}
 			fmt.Println(processUUID)
-			break
 		case "kill":
 			log.Fatalln("Not implemented")
-			break
 		case "ps":
 			log.Fatalln("Not implemented")
-			break
 		case "get":
 			log.Fatalln("Not implemented")
-			break
 		case "read":
 			log.Fatalln("Not implemented")
-			break
 		default:
 			log.Fatalf("Invalid action: %q", action)
-			break
 		}
 	} else {
 		log.Fatalln("missing action")
