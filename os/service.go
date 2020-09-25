@@ -1,4 +1,4 @@
-package linux
+package os
 
 import (
 	"os/exec"
