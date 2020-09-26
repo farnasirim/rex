@@ -32,7 +32,7 @@ func NewRexClient(cc grpc.ClientConnInterface) RexClient {
 
 func (c *rexClient) Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (*ExecResponse, error) {
 	out := new(ExecResponse)
-	err := c.cc.Invoke(ctx, "/proto.Rex/Exec", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/Rex/Exec", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func _Rex_Exec_Handler(srv interface{}, ctx context.Context, dec func(interface{
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.Rex/Exec",
+		FullMethod: "/Rex/Exec",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RexServer).Exec(ctx, req.(*ExecRequest))
@@ -81,7 +81,7 @@ func _Rex_Exec_Handler(srv interface{}, ctx context.Context, dec func(interface{
 }
 
 var _Rex_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.Rex",
+	ServiceName: "Rex",
 	HandlerType: (*RexServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

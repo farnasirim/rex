@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"flag"
 	"io/ioutil"
 	"net"
 
@@ -16,6 +17,19 @@ import (
 	"github.com/farnasirim/rex/proto"
 )
 
+type variadicFlag []string
+
+func (f *variadicFlag) Set(value string) error {
+	*f = append(*f, value)
+	return nil
+}
+
+func (f *variadicFlag) String() string {
+	return ""
+}
+
+var policyFlags variadicFlag
+
 func readFileOrFatal(filepath string) []byte {
 	content, err := ioutil.ReadFile(filepath)
 	if err != nil {
@@ -27,6 +41,20 @@ func readFileOrFatal(filepath string) []byte {
 // TODO: lots of duplication in rex/main.go and rexd/main.go
 func main() {
 	log.SetLevel(log.DebugLevel)
+
+	flag.Var(&policyFlags, "policy",
+		"JSON formatted policy with keys Principal, Action, and Effect. Can be passed multiple times.")
+
+	flag.Parse()
+
+	var policies []rex_grpc.Policy
+	for _, fl := range policyFlags {
+		x, err := rex_grpc.SimpleAccessRuleFromJSON([]byte(fl))
+		if err != nil {
+			log.Warnf("Policy argument ignored: %v", err)
+		}
+		policies = append(policies, x)
+	}
 
 	lis, err := net.Listen("tcp", "localhost:9090")
 	if err != nil {
@@ -54,8 +82,15 @@ func main() {
 
 	tlsCredentials := credentials.NewTLS(config)
 
+	policyEnforcer := rex_grpc.NewPolicyEnforcer(policies...)
+
 	grpcServer := grpc.NewServer(grpc.Creds(tlsCredentials),
-		grpc.UnaryInterceptor(rex_grpc.ErrorMarshallerInterceptor))
+		grpc.ChainUnaryInterceptor(
+			rex_grpc.AuthInfoInterceptor,
+			policyEnforcer.PolicyEnforcementInterceptor,
+			rex_grpc.ErrorMarshallerInterceptor,
+		),
+	)
 	linuxProcessServer := localexec.NewServer()
 	rexGRPCServer := rex_grpc.NewServer(linuxProcessServer)
 

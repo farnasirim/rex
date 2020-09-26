@@ -17,10 +17,15 @@ The certificates will be created in the scripts directory:
 $ ls scripts
 ```
 
-Next, run the server:
+Next, run the server, passing the required policies:
 ```bash
-$ ./rexd
+$ ./rexd -policy '{"Principal": "*", "Action": "*", "Effect": "Allow"}' \
+    -policy '{"Principal": "USER_UUID_HERE", "Action": "/Rex/Exec", "Effect": "Deny"}'
 ```
+The `-policy` flag can be passed multiple times.
+The former policy allows all
+API calls by all users, otherwise no user is authorized to access any API.
+The latter disallows a particular user from calling `/Rex/Exec`.
 
 Then on another terminal:
 ```bash
@@ -35,6 +40,16 @@ $ ./rex exec touch some_file
 Verify the results (on the same directory that you ran `./rexd` from):
 ```bash
 $ ls some_file
+```
+
+Executing a nonexistent file, which allows the client to catch `ErrNotFound`:
+```bash
+$ ./rex exec nonexistent-binary
+```
+
+Executing a file without the execute permission:
+```bash
+$ ./rex exec ./rex.go
 ```
 
 
