@@ -24,6 +24,8 @@ $ ./rexd \
     -policy '{"Principal": "*", "Action": "*", "Effect": "Allow"}' \
     -policy '{"Principal": "'$CL2_ID'", "Action": "/Rex/Exec", "Effect": "Deny"}'
 ```
+The `-datadir` flag specifies the directory that rex will use to store
+process stdout/stderr.
 The `-policy` flag can be passed multiple times.
 The former policy allows all
 API calls by all users, otherwise no user is authorized to access any API.

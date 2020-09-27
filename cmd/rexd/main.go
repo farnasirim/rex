@@ -6,6 +6,8 @@ import (
 	"flag"
 	"io/ioutil"
 	"net"
+	"os"
+	"path"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -32,6 +34,7 @@ var policyFlags variadicFlag
 var pathToCACert string
 var pathToCert string
 var pathToKey string
+var dataDirFlag string
 
 func readFileOrFatal(filepath string) []byte {
 	content, err := ioutil.ReadFile(filepath)
@@ -51,6 +54,14 @@ func main() {
 	flag.StringVar(&pathToCACert, "ca", "", "path to ca certificate in pem format")
 	flag.StringVar(&pathToCert, "cert", "", "path to server certificate in pem format")
 	flag.StringVar(&pathToKey, "key", "", "path to server private key in pem format")
+
+	dataDirDefault := os.Getenv("TMPDIR")
+	if len(dataDirDefault) == 0 {
+		dataDirDefault = "/tmp"
+	}
+	dataDirDefault = path.Join(dataDirDefault, "rex")
+	flag.StringVar(&dataDirFlag, "datadir", dataDirDefault,
+		"Directory to store process stdout/stderr files")
 
 	flag.Parse()
 
@@ -110,7 +121,7 @@ func main() {
 			rex_grpc.ErrorMarshallerInterceptor,
 		),
 	)
-	linuxProcessServer := localexec.NewServer()
+	linuxProcessServer := localexec.NewServer(dataDirFlag)
 	rexGRPCServer := rex_grpc.NewServer(linuxProcessServer)
 
 	proto.RegisterRexServer(grpcServer, rexGRPCServer)

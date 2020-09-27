@@ -4,3 +4,4 @@
 !/scripts/openssl.cnf
 !/scripts/*.sh
 !/scripts/README.md
+/data
