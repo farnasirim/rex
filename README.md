@@ -21,15 +21,16 @@ required policies:
 ```bash
 $ ./rexd \
     -ca fixtures/tls/ca/ca.crt -cert fixtures/tls/server/1.pem -key fixtures/tls/server/1.key \
+    -datadir data
     -policy '{"Principal": "*", "Action": "*", "Effect": "Allow"}' \
-    -policy '{"Principal": "'$CL2_ID'", "Action": "/Rex/Exec", "Effect": "Deny"}'
+    -policy '{"Principal": "'$CL2_ID'", "Action": "/Rex/ListProcessInfo", "Effect": "Deny"}'
 ```
 The `-datadir` flag specifies the directory that rex will use to store
 process stdout/stderr.
 The `-policy` flag can be passed multiple times.
 The former policy allows all
 API calls by all users, otherwise no user is authorized to access any API.
-The latter disallows a user with UUID equal to `$CL2_ID` from calling `/Rex/Exec`.
+The latter disallows a user with UUID equal to `$CL2_ID` from calling `/Rex/ListProcessInfo`.
 
 Then on another terminal, first set `CL1_ARGS` and `CL2_ARGS` to contain the
 TLS-related arguments for the client:
@@ -66,6 +67,17 @@ $ ./rex $CL1_ARGS exec ./rex.go
 Since CL2 is not allowed to call Exec, the following command would fail:
 ```bash
 $ ./rex $CL2_ARGS exec touch another_file
+```
+
+To get a list of processes:
+```bash
+$ ./rex $CL1_ARGS ps
+```
+
+To verify that client with UUID `$CL2_ID` is not allowed to call
+`/Rex/ListProcessInfo/`:
+```bash
+$ ./rex $CL2_ARGS ps
 ```
 
 ## Design

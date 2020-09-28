@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 option go_package = "github.com/farnasirim/rex/proto";
 
 // Rex exposes API for remote process execution.
@@ -7,6 +9,10 @@ service Rex {
   // Exec executes a specified command and returns the result of *starting*
   // the execution of the command.
   rpc Exec(ExecRequest) returns (ExecResponse) {}
+
+  // ListProcessInfo returns a list containing summarized information
+  // about each process that has been created in the system.
+  rpc ListProcessInfo(ListProcessInfoRequest) returns (ProcessInfoList) {}
 }
 
 // ExecRequest specifies what binary needs to be Exec'd and how.
@@ -24,4 +30,26 @@ message ExecResponse {
   // ProcessUUID is the UUID of the process that is created when Exec returns
   // without error.
   string ProcessUUID = 1; // TODO: validate UUID here
+}
+
+// ProcessInfo is the summarized information about a particular process
+message ProcessInfo {
+  string processUUID = 1;
+  int32 pid = 2;
+  int32 exitCode = 3;
+  bool running = 4;
+  string path = 5;
+  repeated string args = 6;
+  string ownerUUID = 7;
+  google.protobuf.Timestamp create = 8;
+  google.protobuf.Timestamp exit = 9;
+}
+
+// ProcessInfoList embodies a list of ProcessInfo messages
+message ProcessInfoList {
+  repeated ProcessInfo processes = 1;
+}
+
+message ListProcessInfoRequest {
+
 }

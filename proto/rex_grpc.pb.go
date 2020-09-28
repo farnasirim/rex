@@ -20,6 +20,9 @@ type RexClient interface {
 	// Exec executes a specified command and returns the result of *starting*
 	// the execution of the command.
 	Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (*ExecResponse, error)
+	// ListProcessInfo returns a list containing summarized information
+	// about each process that has been created in the system.
+	ListProcessInfo(ctx context.Context, in *ListProcessInfoRequest, opts ...grpc.CallOption) (*ProcessInfoList, error)
 }
 
 type rexClient struct {
@@ -39,6 +42,15 @@ func (c *rexClient) Exec(ctx context.Context, in *ExecRequest, opts ...grpc.Call
 	return out, nil
 }
 
+func (c *rexClient) ListProcessInfo(ctx context.Context, in *ListProcessInfoRequest, opts ...grpc.CallOption) (*ProcessInfoList, error) {
+	out := new(ProcessInfoList)
+	err := c.cc.Invoke(ctx, "/Rex/ListProcessInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RexServer is the server API for Rex service.
 // All implementations must embed UnimplementedRexServer
 // for forward compatibility
@@ -46,6 +58,9 @@ type RexServer interface {
 	// Exec executes a specified command and returns the result of *starting*
 	// the execution of the command.
 	Exec(context.Context, *ExecRequest) (*ExecResponse, error)
+	// ListProcessInfo returns a list containing summarized information
+	// about each process that has been created in the system.
+	ListProcessInfo(context.Context, *ListProcessInfoRequest) (*ProcessInfoList, error)
 	mustEmbedUnimplementedRexServer()
 }
 
@@ -55,6 +70,9 @@ type UnimplementedRexServer struct {
 
 func (*UnimplementedRexServer) Exec(context.Context, *ExecRequest) (*ExecResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Exec not implemented")
+}
+func (*UnimplementedRexServer) ListProcessInfo(context.Context, *ListProcessInfoRequest) (*ProcessInfoList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProcessInfo not implemented")
 }
 func (*UnimplementedRexServer) mustEmbedUnimplementedRexServer() {}
 
@@ -80,6 +98,24 @@ func _Rex_Exec_Handler(srv interface{}, ctx context.Context, dec func(interface{
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Rex_ListProcessInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProcessInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RexServer).ListProcessInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Rex/ListProcessInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RexServer).ListProcessInfo(ctx, req.(*ListProcessInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Rex_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "Rex",
 	HandlerType: (*RexServer)(nil),
@@ -87,6 +123,10 @@ var _Rex_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Exec",
 			Handler:    _Rex_Exec_Handler,
+		},
+		{
+			MethodName: "ListProcessInfo",
+			Handler:    _Rex_ListProcessInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

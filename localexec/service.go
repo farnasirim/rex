@@ -1,6 +1,7 @@
 package localexec
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"path"
@@ -10,6 +11,8 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/google/uuid"
+
+	"github.com/farnasirim/rex"
 )
 
 // ProcessServer implements rex.Service in the Linux environment
@@ -19,11 +22,17 @@ type ProcessServer struct {
 }
 
 // Exec creates a process from the supplied path and args
-func (ps *ProcessServer) Exec(path string, args ...string) (uuid.UUID, error) {
+func (ps *ProcessServer) Exec(ctx context.Context,
+	path string, args ...string) (uuid.UUID, error) {
 	cmd := exec.Command(path, args...)
 
-	processUUID := uuid.New()
-	stdout, stderr, err := ps.createOutputFiles(processUUID)
+	processID := uuid.New().String()
+	stdout, stderr, err := ps.createOutputFiles(processID)
+
+	ownerID, ok := rex.UserIDFromContext(ctx)
+	if !ok {
+		return uuid.Nil, rex.ErrUnauthenticated
+	}
 
 	if err != nil {
 		return uuid.Nil, err
@@ -33,55 +42,67 @@ func (ps *ProcessServer) Exec(path string, args ...string) (uuid.UUID, error) {
 
 	// TODO: would be better to get the exact start time from /proc/$pid/stat
 	// I still don't see an easy way to find the exact exit time however.
-	startTime := time.Now().UTC()
+	create := time.Now().UTC()
 	if err := cmd.Start(); err != nil {
 		log.Infof("failed starting a process: %v", err)
 		return uuid.Nil, err
 	}
-	ps.registerProcess(processUUID, cmd, startTime)
+	ps.registerProcess(processID, ownerID, cmd, create)
 
-	return processUUID, nil
+	return uuid.MustParse(processID), nil
 }
 
-func (ps *ProcessServer) registerProcess(processUUID uuid.UUID,
-	cmd *exec.Cmd, start time.Time) {
+// Exec creates a process from the supplied path and args
+func (ps *ProcessServer) ListProcessInfo(ctx context.Context) ([]rex.ProcessInfo, error) {
+	var infoList []rex.ProcessInfo
+	ps.processes.Range(func(key, value interface{}) bool {
+		infoList = append(infoList, value.(*processHandle).getProcessInfo())
+		return true
+	})
+	return infoList, nil
+}
+
+func (ps *ProcessServer) registerProcess(processID, ownerID string,
+	cmd *exec.Cmd, create time.Time) {
 
 	handle := &processHandle{
-		id:        processUUID,
-		cmd:       cmd,
-		startTime: start,
+		id:      processID,
+		ownerID: ownerID,
+		cmd:     cmd,
+		create:  create,
+		pid:     cmd.Process.Pid,
 	}
-	ps.processes.Store(processUUID, handle)
+	ps.processes.Store(processID, handle)
 	go func() {
 		err := handle.cmd.Wait()
 		func() {
 			handle.m.Lock()
 			defer handle.m.Unlock()
-			handle.finishTime = time.Now().UTC()
+			handle.exit = time.Now().UTC()
 			handle.waitError = err
 		}()
 	}()
 }
 
-func (ps *ProcessServer) getStdoutFilename(processUUID uuid.UUID) string {
-	return path.Join(ps.dataDir, "proc", processUUID.String(), "stdout")
+func (ps *ProcessServer) getStdoutFilename(processID string) string {
+	return path.Join(ps.dataDir, "proc", processID, "stdout")
 }
 
-func (ps *ProcessServer) getStderrFilename(processUUID uuid.UUID) string {
-	return path.Join(ps.dataDir, "proc", processUUID.String(), "stderr")
+func (ps *ProcessServer) getStderrFilename(processID string) string {
+	return path.Join(ps.dataDir, "proc", processID, "stderr")
 }
 
-func (ps *ProcessServer) createOutputFiles(processUUID uuid.UUID) (*os.File, *os.File, error) {
-	err := os.MkdirAll(path.Dir(ps.getStderrFilename(processUUID)), 0755)
+func (ps *ProcessServer) createOutputFiles(processID string) (*os.File, *os.File, error) {
+	err := os.MkdirAll(path.Dir(ps.getStderrFilename(processID)), 0755)
 	if err != nil {
 		return nil, nil, err
 	}
-	stdout, err := os.Create(ps.getStdoutFilename(processUUID))
+	stdout, err := os.Create(ps.getStdoutFilename(processID))
 	if err != nil {
 		return nil, nil, err
 	}
 
-	stderr, err := os.Create(ps.getStderrFilename(processUUID))
+	stderr, err := os.Create(ps.getStderrFilename(processID))
 	if err != nil {
 		defer stdout.Close()
 		return nil, nil, err
@@ -91,12 +112,33 @@ func (ps *ProcessServer) createOutputFiles(processUUID uuid.UUID) (*os.File, *os
 }
 
 type processHandle struct {
-	id         uuid.UUID
-	cmd        *exec.Cmd
-	startTime  time.Time
-	finishTime time.Time
-	waitError  error
-	m          sync.RWMutex
+	id        string
+	ownerID   string
+	pid       int
+	cmd       *exec.Cmd
+	create    time.Time
+	exit      time.Time
+	waitError error
+	m         sync.RWMutex
+}
+
+func (ph *processHandle) getProcessInfo() rex.ProcessInfo {
+	ph.m.RLock()
+	defer ph.m.RUnlock()
+	info := rex.ProcessInfo{
+		ID:      uuid.MustParse(ph.id),
+		PID:     ph.pid,
+		Running: ph.exit.IsZero(),
+		Path:    ph.cmd.Path,
+		Args:    ph.cmd.Args,
+		Create:  ph.create,
+		OwnerID: uuid.MustParse(ph.ownerID),
+	}
+	if ph.cmd.ProcessState != nil {
+		info.Exit = ph.exit
+		info.ExitCode = ph.cmd.ProcessState.ExitCode()
+	}
+	return info
 }
 
 func NewServer(dataDir string) *ProcessServer {

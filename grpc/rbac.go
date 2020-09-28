@@ -44,11 +44,11 @@ type SimpleAccessRule struct {
 // match those in the context, (false, false) otherwise. Its Principal and
 // Action fields support "*" to always match.
 func (r *SimpleAccessRule) Enforce(ctx context.Context) (bool, bool) {
-	userID, ok := ctx.Value(userIDContextKey).(string)
+	userID, ok := rex.UserIDFromContext(ctx)
 	if !ok {
 		return false, false
 	}
-	methodName, ok := ctx.Value(methodNameContextKey).(string)
+	methodName, ok := rex.MethodNameFromContext(ctx)
 	if !ok {
 		return false, false
 	}
@@ -127,7 +127,7 @@ func PolicyEnforcementInterceptor(p Policy) grpc.UnaryServerInterceptor {
 		req interface{},
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler) (resp interface{}, err error) {
-		ctx = context.WithValue(ctx, methodNameContextKey, info.FullMethod)
+		ctx = context.WithValue(ctx, rex.MethodNameContextKey, info.FullMethod)
 
 		if authorized, applies := p.Enforce(ctx); !applies || !authorized {
 			return nil, status.Errorf(codes.PermissionDenied,

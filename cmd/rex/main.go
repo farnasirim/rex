@@ -1,16 +1,21 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/kataras/tablewriter"
 
 	log "github.com/sirupsen/logrus"
 
@@ -84,18 +89,16 @@ func main() {
 	var client rex.Service = rex_grpc.NewClient(conn)
 
 	log.Debugln("Created new client")
-	if flag.NArg() <= 1 {
+	if flag.NArg() < 1 {
 		log.Fatalln("missing action")
 	}
+
 	action := flag.Arg(0)
 	rest := flag.Args()[1:]
 
 	switch action {
 	case "exec":
-		if len(rest) == 0 {
-			log.Fatalln("missing path to executable file")
-		}
-		processUUID, err := client.Exec(rest[0], rest[1:]...)
+		processUUID, err := client.Exec(context.Background(), rest[0], rest[1:]...)
 		if err != nil {
 			if errors.Is(err, exec.ErrNotFound) {
 				log.Debugln("Got exec.ErrNotFound")
@@ -106,7 +109,27 @@ func main() {
 	case "kill":
 		log.Fatalln("Not implemented")
 	case "ps":
-		log.Fatalln("Not implemented")
+		processes, err := client.ListProcessInfo(context.Background())
+		if err != nil {
+			log.Fatalln(err.Error())
+		}
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"ID", "Owner ID", "Created", "State"})
+		now := time.Now().UTC()
+		for _, p := range processes {
+			var row []string
+			row = append(row, p.ID.String())
+			row = append(row, p.OwnerID.String())
+			row = append(row, now.Sub(p.Create).Round(time.Second).String())
+			state := "running"
+			if !p.Exit.IsZero() {
+				state = fmt.Sprintf("Exited with code %d (%s ago)",
+					p.ExitCode, now.Sub(p.Exit).Round(time.Second).String())
+			}
+			row = append(row, state)
+			table.Append(row)
+		}
+		table.Render()
 	case "get":
 		log.Fatalln("Not implemented")
 	case "read":
