@@ -64,36 +64,34 @@ func main() {
 	var client rex.Service = rex_grpc.NewClient(conn)
 
 	log.Debugln("Created new client")
-	if flag.NArg() > 1 {
-		action := flag.Arg(0)
-		rest := flag.Args()[1:]
-
-		switch action {
-		case "exec":
-			if len(rest) == 0 {
-				log.Fatalln("missing path to executable file")
-			}
-			processUUID, err := client.Exec(rest[0], rest[1:]...)
-			if err != nil {
-				if errors.Is(err, exec.ErrNotFound) {
-					log.Debugln("Got exec.ErrNotFound")
-				}
-				log.Fatalln(err.Error())
-			}
-			fmt.Println(processUUID)
-		case "kill":
-			log.Fatalln("Not implemented")
-		case "ps":
-			log.Fatalln("Not implemented")
-		case "get":
-			log.Fatalln("Not implemented")
-		case "read":
-			log.Fatalln("Not implemented")
-		default:
-			log.Fatalf("Invalid action: %q", action)
-		}
-	} else {
+	if flag.NArg() <= 1 {
 		log.Fatalln("missing action")
 	}
+	action := flag.Arg(0)
+	rest := flag.Args()[1:]
 
+	switch action {
+	case "exec":
+		if len(rest) == 0 {
+			log.Fatalln("missing path to executable file")
+		}
+		processUUID, err := client.Exec(rest[0], rest[1:]...)
+		if err != nil {
+			if errors.Is(err, exec.ErrNotFound) {
+				log.Debugln("Got exec.ErrNotFound")
+			}
+			log.Fatalln(err.Error())
+		}
+		fmt.Println(processUUID)
+	case "kill":
+		log.Fatalln("Not implemented")
+	case "ps":
+		log.Fatalln("Not implemented")
+	case "get":
+		log.Fatalln("Not implemented")
+	case "read":
+		log.Fatalln("Not implemented")
+	default:
+		log.Fatalf("Invalid action: %q", action)
+	}
 }
