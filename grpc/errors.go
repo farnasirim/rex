@@ -7,7 +7,6 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
-	//"google.golang.org/grpc/status"
 
 	log "github.com/sirupsen/logrus"
 )
