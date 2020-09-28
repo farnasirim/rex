@@ -70,6 +70,9 @@ func main() {
 
 		switch action {
 		case "exec":
+			if len(rest) == 0 {
+				log.Fatalln("missing path to executable file")
+			}
 			processUUID, err := client.Exec(rest[0], rest[1:]...)
 			if err != nil {
 				if errors.Is(err, exec.ErrNotFound) {
