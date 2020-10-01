@@ -29,6 +29,9 @@ func (f *variadicFlag) String() string {
 }
 
 var policyFlags variadicFlag
+var pathToCACert string
+var pathToCert string
+var pathToKey string
 
 func readFileOrFatal(filepath string) []byte {
 	content, err := ioutil.ReadFile(filepath)
@@ -45,7 +48,23 @@ func main() {
 	flag.Var(&policyFlags, "policy",
 		"JSON formatted policy with keys Principal, Action, and Effect. Can be passed multiple times.")
 
+	flag.StringVar(&pathToCACert, "ca", "", "path to ca certificate in pem format")
+	flag.StringVar(&pathToCert, "cert", "", "path to server certificate in pem format")
+	flag.StringVar(&pathToKey, "key", "", "path to server private key in pem format")
+
 	flag.Parse()
+
+	if pathToCACert == "" {
+		log.Fatalln("Missing -ca arg")
+	}
+
+	if pathToKey == "" {
+		log.Fatalln("Missing -key arg")
+	}
+
+	if pathToCert == "" {
+		log.Fatalln("Missing -cert arg")
+	}
 
 	var policies []rex_grpc.Policy
 	for _, fl := range policyFlags {
@@ -62,11 +81,11 @@ func main() {
 	}
 
 	caPool := x509.NewCertPool()
-	if ok := caPool.AppendCertsFromPEM(readFileOrFatal("scripts/ca.crt")); !ok {
+	if ok := caPool.AppendCertsFromPEM(readFileOrFatal(pathToCACert)); !ok {
 		log.Fatalln("CA cert malformed")
 	}
 
-	cert, err := tls.LoadX509KeyPair("scripts/server.pem", "scripts/server.key")
+	cert, err := tls.LoadX509KeyPair(pathToCert, pathToKey)
 	if err != nil {
 		log.Fatalf("Failed to load key pair: %v\n", err)
 	}

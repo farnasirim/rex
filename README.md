@@ -1,40 +1,49 @@
 # Rex: Remote process execution service
 
-# build
+## build
 Install [gRPC toolkit](https://grpc.io/docs/languages/go/quickstart/) for go.
 Afterwards you can build the client and server binaries:
 ```bash
 $ make rex rexd
 ```
 
-To generate the certificates (opnessl required):
-```bash
-$ (cd scripts && ./gen_certs.sh)
+Visit `scripts/README.md` to generate certificates. You can also use
+pre-generated certificates in `./fixtures/tls/{client,server,ca}`.
+
+You can save the clients' UUIDs for future reference:
+```
+CL1_ID="$(openssl x509 -subject -in fixtures/tls/client/1.pem -noout -dates | grep CN | grep -o '[^ ]*$')"
+CL2_ID="$(openssl x509 -subject -in fixtures/tls/client/2.pem -noout -dates | grep CN | grep -o '[^ ]*$')"
 ```
 
-The certificates will be created in the scripts directory:
+Next, run the server, passing the ca certificate, server key pair, plus the
+required policies:
 ```bash
-$ ls scripts
-```
-
-Next, run the server, passing the required policies:
-```bash
-$ ./rexd -policy '{"Principal": "*", "Action": "*", "Effect": "Allow"}' \
-    -policy '{"Principal": "USER_UUID_HERE", "Action": "/Rex/Exec", "Effect": "Deny"}'
+$ ./rexd \
+    -ca fixtures/tls/ca/ca.crt -cert fixtures/tls/server/1.pem -key fixtures/tls/server/1.key \
+    -policy '{"Principal": "*", "Action": "*", "Effect": "Allow"}' \
+    -policy '{"Principal": "'$CL2_ID'", "Action": "/Rex/Exec", "Effect": "Deny"}'
 ```
 The `-policy` flag can be passed multiple times.
 The former policy allows all
 API calls by all users, otherwise no user is authorized to access any API.
-The latter disallows a particular user from calling `/Rex/Exec`.
+The latter disallows a user with UUID equal to `$CL2_ID` from calling `/Rex/Exec`.
 
-Then on another terminal:
+Then on another terminal, first set `CL1_ARGS` and `CL2_ARGS` to contain the
+TLS-related arguments for the client:
+```
+CL1_ARGS="-ca fixtures/tls/ca/ca.crt -cert fixtures/tls/client/1.pem -key fixtures/tls/client/1.key"
+CL2_ARGS="-ca fixtures/tls/ca/ca.crt -cert fixtures/tls/client/2.pem -key fixtures/tls/client/2.key"
+```
+
+Then run
 ```bash
-$ ./rex exec $YOUR_COMMAND_HERE
+$ ./rex exec $CL1_ARGS $YOUR_COMMAND_HERE
 ```
 
 For example:
 ```bash
-$ ./rex exec touch some_file
+$ ./rex exec $CL1_ARGS touch some_file
 ```
 
 Verify the results (on the same directory that you ran `./rexd` from):
@@ -44,14 +53,18 @@ $ ls some_file
 
 Executing a nonexistent file, which allows the client to catch `ErrNotFound`:
 ```bash
-$ ./rex exec nonexistent-binary
+$ ./rex exec $CL1_ARGS nonexistent-binary
 ```
 
 Executing a file without the execute permission:
 ```bash
-$ ./rex exec ./rex.go
+$ ./rex exec $CL1_ARGS ./rex.go
 ```
 
+Since CL2 is not allowed to call Exec, the following command would fail:
+```bash
+$ ./rex exec $CL2_ARGS touch another_file
+```
 
 ## Design
 [Design document](https://docs.google.com/document/d/1ICGf0mDO4sh1-PH73gvYQXFNxD0CGETNpy9wnxx1UWM/edit?usp=sharing)

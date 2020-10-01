@@ -18,6 +18,10 @@ import (
 	rex_grpc "github.com/farnasirim/rex/grpc"
 )
 
+var pathToCACert string
+var pathToCert string
+var pathToKey string
+
 func readFileOrFatal(filepath string) []byte {
 	content, err := ioutil.ReadFile(filepath)
 	if err != nil {
@@ -29,14 +33,30 @@ func readFileOrFatal(filepath string) []byte {
 func main() {
 	log.SetLevel(log.DebugLevel)
 
+	flag.StringVar(&pathToCACert, "ca", "", "path to ca certificate in pem format")
+	flag.StringVar(&pathToCert, "cert", "", "path to server certificate in pem format")
+	flag.StringVar(&pathToKey, "key", "", "path to server private key in pem format")
+
 	flag.Parse()
 
+	if pathToCACert == "" {
+		log.Fatalln("Missing -ca arg")
+	}
+
+	if pathToKey == "" {
+		log.Fatalln("Missing -key arg")
+	}
+
+	if pathToCert == "" {
+		log.Fatalln("Missing -cert arg")
+	}
+
 	caPool := x509.NewCertPool()
-	if ok := caPool.AppendCertsFromPEM(readFileOrFatal("scripts/ca.crt")); !ok {
+	if ok := caPool.AppendCertsFromPEM(readFileOrFatal(pathToCACert)); !ok {
 		log.Fatalln("CA cert malformed")
 	}
 
-	cert, err := tls.LoadX509KeyPair("scripts/client.pem", "scripts/client.key")
+	cert, err := tls.LoadX509KeyPair(pathToCert, pathToKey)
 	if err != nil {
 		log.Fatalf("Failed to load key pair: %v\n", err)
 	}
