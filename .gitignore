@@ -1,0 +1,5 @@
+/rex
+/rexd
+/scripts/*
+!/scripts/openssl.cnf
+!/scripts/gen_certs.sh

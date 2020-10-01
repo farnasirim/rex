@@ -1,0 +1,28 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "github.com/farnasirim/rex/proto";
+
+// Rex exposes API for remote process execution.
+service Rex {
+  // Exec executes a specified command and returns the result of *starting*
+  // the execution of the command.
+  rpc Exec(ExecRequest) returns (ExecResponse) {}
+}
+
+// ExecRequest specifies what binary needs to be Exec'd and how.
+message ExecRequest {
+  // path is the absolute or relative (to server dir) path to an executable
+  string path = 1;
+  // args is a list of command line args that will be passed to the
+  // executable upon execution.
+  repeated string args = 2;
+}
+
+// ExecResponse embodies the identifier of the newly created process if the
+// call to Exec had been successful.
+message ExecResponse {
+  // ProcessUUID is the UUID of the process that is created when Exec returns
+  // without error.
+  string ProcessUUID = 1; // TODO: validate UUID here
+}
