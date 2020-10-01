@@ -38,12 +38,12 @@ CL2_ARGS="-ca fixtures/tls/ca/ca.crt -cert fixtures/tls/client/2.pem -key fixtur
 
 Then run
 ```bash
-$ ./rex exec $CL1_ARGS $YOUR_COMMAND_HERE
+$ ./rex $CL1_ARGS exec $YOUR_COMMAND_HERE
 ```
 
 For example:
 ```bash
-$ ./rex exec $CL1_ARGS touch some_file
+$ ./rex $CL1_ARGS exec touch some_file
 ```
 
 Verify the results (on the same directory that you ran `./rexd` from):
@@ -53,17 +53,17 @@ $ ls some_file
 
 Executing a nonexistent file, which allows the client to catch `ErrNotFound`:
 ```bash
-$ ./rex exec $CL1_ARGS nonexistent-binary
+$ ./rex $CL1_ARGS exec nonexistent-binary
 ```
 
 Executing a file without the execute permission:
 ```bash
-$ ./rex exec $CL1_ARGS ./rex.go
+$ ./rex $CL1_ARGS exec ./rex.go
 ```
 
 Since CL2 is not allowed to call Exec, the following command would fail:
 ```bash
-$ ./rex exec $CL2_ARGS touch another_file
+$ ./rex $CL2_ARGS exec touch another_file
 ```
 
 ## Design
