@@ -31,6 +31,7 @@ func (e *errorChain) Unwrap() error {
 func (e *errorChain) Marshal() error {
 	marshalledError, err := json.Marshal(e)
 	if err != nil {
+		// errorChain has neither unsupported types nor cycles
 		log.Fatalln(err.Error())
 	}
 	return errors.New(string(marshalledError))
