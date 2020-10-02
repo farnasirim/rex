@@ -18,6 +18,12 @@ const (
 	StderrStream OutputStream = 0x2
 )
 
+type rexContextKey string
+
+const (
+	userIDContextKey rexContextKey = "Rex-Context-UserID"
+)
+
 // Service defines the Rex interface within Go.
 type Service interface {
 	// Exec executes a given executable with the supplied args.
@@ -63,12 +69,6 @@ type ProcessInfo struct {
 	// undefined if Running=true.
 	Exit time.Time
 }
-
-type rexContextKey string
-
-const (
-	userIDContextKey rexContextKey = "Rex-Context-UserID"
-)
 
 var (
 	// ErrNotImplemented is returned by any of the API implementations
