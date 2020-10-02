@@ -31,6 +31,7 @@ var (
 	pathToCert   string
 	pathToKey    string
 	serverAddr   string
+	timeout      int
 )
 
 func main() {
@@ -52,12 +53,19 @@ func main() {
 	action := flag.Arg(0)
 	rest := flag.Args()[1:]
 
+	ctx := context.Background()
+	if timeout != -1 {
+		var cancelFunc func()
+		ctx, cancelFunc = context.WithTimeout(ctx, time.Duration(timeout)*time.Millisecond)
+		defer cancelFunc()
+	}
+
 	switch action {
 	case "exec":
 		if len(rest) < 1 {
 			log.Fatalln("Missing executable path")
 		}
-		processUUID, err := client.Exec(context.Background(), rest[0], rest[1:]...)
+		processUUID, err := client.Exec(ctx, rest[0], rest[1:]...)
 		if err != nil {
 			if errors.Is(err, exec.ErrNotFound) {
 				log.Debugln("Got exec.ErrNotFound")
@@ -78,12 +86,12 @@ func main() {
 		}
 
 		// only supports sigint for now
-		err = client.Kill(context.Background(), processID, int(syscall.SIGINT))
+		err = client.Kill(ctx, processID, int(syscall.SIGINT))
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
 	case "ps":
-		processes, err := client.ListProcessInfo(context.Background())
+		processes, err := client.ListProcessInfo(ctx)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
@@ -114,7 +122,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Bad argument %q: %v", rest[0], err)
 		}
-		procInfo, err := client.GetProcessInfo(context.Background(), processUUID)
+		procInfo, err := client.GetProcessInfo(ctx, processUUID)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
@@ -147,7 +155,7 @@ func main() {
 			targetStream = rex.StderrStream
 		}
 
-		content, err := client.Read(context.Background(), processID, targetStream)
+		content, err := client.Read(ctx, processID, targetStream)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
@@ -163,6 +171,7 @@ func parseAndValidate() {
 	flag.StringVar(&pathToCert, "cert", "", "path to server certificate in pem format")
 	flag.StringVar(&pathToKey, "key", "", "path to server private key in pem format")
 	flag.StringVar(&serverAddr, "addr", "localhost:9090", "server address of form [ip]:port")
+	flag.IntVar(&timeout, "timeout", -1, "time limit of the exection of the command (milliseconds)")
 
 	flag.Parse()
 
