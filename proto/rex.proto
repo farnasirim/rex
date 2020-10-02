@@ -13,6 +13,15 @@ service Rex {
   // ListProcessInfo returns a list containing summarized information
   // about each process that has been created in the system.
   rpc ListProcessInfo(ListProcessInfoRequest) returns (ProcessInfoList) {}
+
+  // GetProcessInfo retrieves the process info of a particular process
+  rpc GetProcessInfo(GetProcessInfoRequest) returns (ProcessInfo) {}
+
+  // Kill sends a signal to the specified process
+  rpc Kill(KillRequest) returns (KillResponse) {}
+
+  // Read returns the stdout or the stderr of a process
+  rpc Read(ReadRequest) returns (ReadResponse) {}
 }
 
 // ExecRequest specifies what binary needs to be Exec'd and how.
@@ -52,4 +61,31 @@ message ProcessInfoList {
 
 message ListProcessInfoRequest {
 
+}
+
+message GetProcessInfoRequest {
+  string processUUID = 1;
+}
+
+message KillRequest {
+  string processUUID = 1;
+  int32 signal = 2;
+}
+
+message KillResponse {
+
+}
+
+message ReadRequest {
+  string processUUID = 1;
+  enum File {
+    // cannot start enum values from 1.
+    STDOUT = 0;
+    STDERR = 1;
+  }
+  File target = 2;
+}
+
+message ReadResponse {
+  bytes content = 1;
 }

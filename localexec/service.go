@@ -2,10 +2,13 @@ package localexec
 
 import (
 	"context"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
+	"sort"
 	"sync"
+	"syscall"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -59,7 +62,78 @@ func (ps *ProcessServer) ListProcessInfo(ctx context.Context) ([]rex.ProcessInfo
 		infoList = append(infoList, value.(*processHandle).getProcessInfo())
 		return true
 	})
+	sort.Slice(infoList, func(i, j int) bool {
+		return infoList[i].Create.After(infoList[j].Create)
+	})
 	return infoList, nil
+}
+
+// GetProcessInfo returns the process info corresponding to the givne processID
+func (ps *ProcessServer) GetProcessInfo(ctx context.Context, processID uuid.UUID) (rex.ProcessInfo, error) {
+	mustBeProcessHandle, ok := ps.processes.Load(processID.String())
+	// Must be a little careful here. We are leaking information about the
+	// process UUID's in the system. Might make more sense to make the not found
+	// case indistinguishable from the unauthorized/unauthenticated case.
+	//
+	// A more thorough and natural (not hardcoded) RBAC implementation will
+	// take care of this in a natural way, since for example in this case, it
+	// *cannot find* a process with the given ID, satisfying the condition of
+	// proc.OwnerID == currentUser
+	if !ok {
+		return rex.ProcessInfo{}, rex.ErrNotFound
+	}
+	userID, ok := rex.UserIDFromContext(ctx)
+	if !ok {
+		return rex.ProcessInfo{}, rex.ErrUnauthenticated
+	}
+	if mustBeProcessHandle.(*processHandle).ownerID != userID {
+		return rex.ProcessInfo{}, rex.ErrAccessDenied
+	}
+	return mustBeProcessHandle.(*processHandle).getProcessInfo(), nil
+}
+
+// Kill sends a signal to the given process
+func (ps *ProcessServer) Kill(ctx context.Context, processID uuid.UUID, signal int) error {
+	mustBeProcessHandle, ok := ps.processes.Load(processID.String())
+	if !ok {
+		return rex.ErrNotFound
+	}
+	userID, ok := rex.UserIDFromContext(ctx)
+	if !ok {
+		return rex.ErrUnauthenticated
+	}
+	if mustBeProcessHandle.(*processHandle).ownerID != userID {
+		return rex.ErrAccessDenied
+	}
+	return mustBeProcessHandle.(*processHandle).cmd.Process.Signal(syscall.Signal(signal))
+}
+
+// Read reads either the stdout or the stderr of the given process
+func (ps *ProcessServer) Read(ctx context.Context, processID uuid.UUID, target rex.OutputStream) ([]byte, error) {
+	mustBeProcessHandle, ok := ps.processes.Load(processID.String())
+	if !ok {
+		return nil, rex.ErrNotFound
+	}
+	userID, ok := rex.UserIDFromContext(ctx)
+	if !ok {
+		return nil, rex.ErrUnauthenticated
+	}
+	if mustBeProcessHandle.(*processHandle).ownerID != userID {
+		return nil, rex.ErrAccessDenied
+	}
+
+	var targetFile string
+	if target == rex.StderrStream {
+		targetFile = ps.getStderrFilename(processID.String())
+	} else if target == rex.StdoutStream {
+		targetFile = ps.getStdoutFilename(processID.String())
+	}
+
+	if targetFile == "" {
+		return nil, rex.ErrInvalidArgument
+	}
+
+	return ioutil.ReadFile(targetFile)
 }
 
 func (ps *ProcessServer) registerProcess(processID, ownerID string,
@@ -130,7 +204,7 @@ func (ph *processHandle) getProcessInfo() rex.ProcessInfo {
 		PID:     ph.pid,
 		Running: ph.exit.IsZero(),
 		Path:    ph.cmd.Path,
-		Args:    ph.cmd.Args,
+		Args:    ph.cmd.Args[1:],
 		Create:  ph.create,
 		OwnerID: uuid.MustParse(ph.ownerID),
 	}

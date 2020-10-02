@@ -50,22 +50,76 @@ func (c *Client) ListProcessInfo(ctx context.Context) ([]rex.ProcessInfo, error)
 	}
 	var processes []rex.ProcessInfo
 
-	for _, info := range protoInfos.Processes {
+	for _, pInfo := range protoInfos.Processes {
 		processes = append(processes,
-			rex.ProcessInfo{
-				ID:       uuid.MustParse(info.ProcessUUID),
-				PID:      int(info.Pid),
-				ExitCode: int(info.ExitCode),
-				Path:     info.Path,
-				Args:     info.Args,
-				OwnerID:  uuid.MustParse(info.OwnerUUID),
-				Create:   time.Unix(info.Create.GetSeconds(), int64(info.Create.GetNanos())).UTC(),
-				Exit:     time.Unix(info.Exit.GetSeconds(), int64(info.Exit.GetNanos())).UTC(),
-			},
+			processInfoNativeFromProto(pInfo),
 		)
 	}
 
 	return processes, nil
+}
+
+// GetProcessInfo translates GetProcessInfo from the native API to the GRPC
+// api to get the process info of a given process
+func (c *Client) GetProcessInfo(ctx context.Context, processID uuid.UUID) (rex.ProcessInfo, error) {
+	pInfo, err := c.grpcClient.GetProcessInfo(ctx,
+		&proto.GetProcessInfoRequest{ProcessUUID: processID.String()},
+	)
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			return rex.ProcessInfo{}, errors.New(st.Message())
+		}
+		return rex.ProcessInfo{}, err
+	}
+	return processInfoNativeFromProto(pInfo), nil
+}
+
+// Kill translates Kill from the native API to the GRPC api to send a signal
+// to a specific process
+func (c *Client) Kill(ctx context.Context, processID uuid.UUID, signal int) error {
+	_, err := c.grpcClient.Kill(ctx,
+		&proto.KillRequest{ProcessUUID: processID.String(), Signal: int32(signal)},
+	)
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			return errors.New(st.Message())
+		}
+		return err
+	}
+	return nil
+}
+
+// Read translates Read from the native API to the GRPC api to read the stdout
+// or the stderr of a specific process
+func (c *Client) Read(ctx context.Context, processID uuid.UUID, target rex.OutputStream) ([]byte, error) {
+	readRequest := &proto.ReadRequest{ProcessUUID: processID.String()}
+	if target == rex.StdoutStream {
+		readRequest.Target = proto.ReadRequest_STDOUT
+	} else if target == rex.StderrStream {
+		readRequest.Target = proto.ReadRequest_STDERR
+	}
+	readResponse, err := c.grpcClient.Read(ctx, readRequest)
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			return nil, errors.New(st.Message())
+		}
+		return nil, err
+	}
+	return readResponse.Content, nil
+}
+
+func processInfoNativeFromProto(pInfo *proto.ProcessInfo) rex.ProcessInfo {
+	return rex.ProcessInfo{
+		ID:       uuid.MustParse(pInfo.ProcessUUID),
+		PID:      int(pInfo.Pid),
+		ExitCode: int(pInfo.ExitCode),
+		Path:     pInfo.Path,
+		Args:     pInfo.Args,
+		Running:  pInfo.Running,
+		OwnerID:  uuid.MustParse(pInfo.OwnerUUID),
+		Create:   time.Unix(pInfo.Create.GetSeconds(), int64(pInfo.Create.GetNanos())).UTC(),
+		Exit:     time.Unix(pInfo.Exit.GetSeconds(), int64(pInfo.Exit.GetNanos())).UTC(),
+	}
 }
 
 // NewClient creates a new GRPC Client

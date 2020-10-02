@@ -10,11 +10,14 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"syscall"
 	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"gopkg.in/yaml.v2"
 
+	"github.com/google/uuid"
 	"github.com/kataras/tablewriter"
 
 	log "github.com/sirupsen/logrus"
@@ -98,6 +101,9 @@ func main() {
 
 	switch action {
 	case "exec":
+		if len(rest) < 1 {
+			log.Fatalln("Missing executable path")
+		}
 		processUUID, err := client.Exec(context.Background(), rest[0], rest[1:]...)
 		if err != nil {
 			if errors.Is(err, exec.ErrNotFound) {
@@ -107,7 +113,22 @@ func main() {
 		}
 		fmt.Println(processUUID)
 	case "kill":
-		log.Fatalln("Not implemented")
+		if len(rest) < 1 {
+			log.Fatalln("Missing process id")
+		} else if len(rest) > 1 {
+			log.Fatalln("Too many arguments: got: %d, expected: %d", len(rest), 1)
+		}
+
+		processID, err := uuid.Parse(rest[0])
+		if err != nil {
+			log.Fatalf("Error while parsing processUUID: %v", err)
+		}
+
+		// only supports sigint for now
+		err = client.Kill(context.Background(), processID, int(syscall.SIGINT))
+		if err != nil {
+			log.Fatalln(err.Error())
+		}
 	case "ps":
 		processes, err := client.ListProcessInfo(context.Background())
 		if err != nil {
@@ -131,9 +152,54 @@ func main() {
 		}
 		table.Render()
 	case "get":
-		log.Fatalln("Not implemented")
+		if len(rest) < 1 {
+			log.Fatalln("Missing processID argument")
+		} else if len(rest) > 1 {
+			log.Fatalln("Too many arguments: got: %d, expected: %d", len(rest), 1)
+		}
+		processUUID, err := uuid.Parse(rest[0])
+		if err != nil {
+			log.Fatalf("Bad argument %q: %v", rest[0], err)
+		}
+		procInfo, err := client.GetProcessInfo(context.Background(), processUUID)
+		if err != nil {
+			log.Fatalln(err.Error())
+		}
+		output, err := yaml.Marshal(procInfo)
+		if err != nil {
+			log.Fatalln("Error while presenting results: %v", err)
+		}
+		fmt.Print(string(output))
+
 	case "read":
-		log.Fatalln("Not implemented")
+		if len(rest) < 1 {
+			log.Fatalln("Missing process id")
+		} else if len(rest) == 1 {
+			log.Fatalln("Missing target stream (stdout/stderr)")
+		} else if len(rest) > 2 {
+			log.Fatalln("Too many arguments: got: %d, expected: %d", len(rest), 2)
+		}
+		processID, err := uuid.Parse(rest[0])
+		if err != nil {
+			log.Fatalf("Error while parsing processUUID: %v", err)
+		}
+
+		var targetStream rex.OutputStream
+		if rest[1] != "stdout" && rest[1] != "stderr" {
+			log.Fatalf("Target stream must be either %q or %q", "stdout", "stderr")
+		}
+		if rest[1] == "stdout" {
+			targetStream = rex.StdoutStream
+		} else if rest[1] == "stderr" {
+			targetStream = rex.StderrStream
+		}
+
+		content, err := client.Read(context.Background(), processID, targetStream)
+		if err != nil {
+			log.Fatalln(err.Error())
+		}
+		fmt.Print(string(content))
+
 	default:
 		log.Fatalf("Invalid action: %q", action)
 	}

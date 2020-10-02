@@ -6,6 +6,7 @@ import (
 	"github.com/farnasirim/rex"
 	"github.com/farnasirim/rex/proto"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/google/uuid"
 )
 
 // Server implements rex.Service by translating the GRPC api and passing
@@ -34,23 +35,71 @@ func (s *Server) ListProcessInfo(ctx context.Context, req *proto.ListProcessInfo
 
 	var protoInfos []*proto.ProcessInfo
 	for _, proc := range processes {
-		protoInfos = append(protoInfos, &proto.ProcessInfo{
-			ProcessUUID: proc.ID.String(),
-			Pid:         int32(proc.PID),
-			ExitCode:    int32(proc.ExitCode),
-			Path:        proc.Path,
-			Args:        proc.Args,
-			OwnerUUID:   proc.OwnerID.String(),
-			Create: &timestamp.Timestamp{
-				Seconds: proc.Create.Unix(),
-				Nanos:   int32(proc.Create.Nanosecond())},
-			Exit: &timestamp.Timestamp{
-				Seconds: proc.Exit.Unix(),
-				Nanos:   int32(proc.Exit.Nanosecond())},
-		})
+		protoInfos = append(protoInfos, processInfoProtoFromNative(proc))
 	}
 
 	return &proto.ProcessInfoList{Processes: protoInfos}, nil
+}
+
+func (s *Server) GetProcessInfo(ctx context.Context, req *proto.GetProcessInfoRequest) (*proto.ProcessInfo, error) {
+	processUUID, err := uuid.Parse(req.ProcessUUID)
+	if err != nil {
+		return nil, err
+	}
+	processInfo, err := s.ps.GetProcessInfo(ctx, processUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	return processInfoProtoFromNative(processInfo), nil
+}
+
+func (s *Server) Kill(ctx context.Context, req *proto.KillRequest) (*proto.KillResponse, error) {
+	processUUID, err := uuid.Parse(req.GetProcessUUID())
+	if err != nil {
+		return nil, err
+	}
+	return &proto.KillResponse{}, s.ps.Kill(ctx, processUUID, int(req.GetSignal()))
+}
+
+func (s *Server) Read(ctx context.Context, req *proto.ReadRequest) (*proto.ReadResponse, error) {
+	processUUID, err := uuid.Parse(req.GetProcessUUID())
+	if err != nil {
+		return nil, err
+	}
+
+	var outputStream rex.OutputStream
+	if req.GetTarget() == proto.ReadRequest_STDOUT {
+		outputStream = rex.StdoutStream
+	} else if req.GetTarget() == proto.ReadRequest_STDERR {
+		outputStream = rex.StderrStream
+	} else {
+		return nil, rex.ErrInvalidArgument
+	}
+
+	output, err := s.ps.Read(ctx, processUUID, outputStream)
+	if err != nil {
+		return nil, err
+	}
+	return &proto.ReadResponse{Content: output}, nil
+}
+
+func processInfoProtoFromNative(proc rex.ProcessInfo) *proto.ProcessInfo {
+	return &proto.ProcessInfo{
+		ProcessUUID: proc.ID.String(),
+		Pid:         int32(proc.PID),
+		ExitCode:    int32(proc.ExitCode),
+		Path:        proc.Path,
+		Args:        proc.Args,
+		Running:     proc.Running,
+		OwnerUUID:   proc.OwnerID.String(),
+		Create: &timestamp.Timestamp{
+			Seconds: proc.Create.Unix(),
+			Nanos:   int32(proc.Create.Nanosecond())},
+		Exit: &timestamp.Timestamp{
+			Seconds: proc.Exit.Unix(),
+			Nanos:   int32(proc.Exit.Nanosecond())},
+	}
 }
 
 // NewServer creates a new Server capable of serving its API

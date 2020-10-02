@@ -10,6 +10,8 @@ $ make rex rexd
 Visit `scripts/README.md` to generate certificates. You can also use
 pre-generated certificates in `./fixtures/tls/{client,server,ca}`.
 
+## Run
+
 You can save the clients' UUIDs for future reference:
 ```
 CL1_ID="$(openssl x509 -subject -in fixtures/tls/client/1.pem -noout -dates | grep CN | grep -o '[^ ]*$')"
@@ -64,12 +66,22 @@ Executing a file without the execute permission:
 $ ./rex $CL1_ARGS exec ./rex.go
 ```
 
-Since CL2 is not allowed to call Exec, the following command would fail:
+Executing a command by client 2 which will likely write to both stdout and stderr:
 ```bash
-$ ./rex $CL2_ARGS exec touch another_file
+$ TASK_ID=$(./rex $CL2_ARGS exec find / -maxdepth 3 2>/dev/null | grep \\-)
+```
+And to peek at the results:
+```bash
+$ ./rex $CL2_ARGS $TASK_ID stdout
+$ ./rex $CL2_ARGS $TASK_ID stderr
+```
+And to make sure clients cannot access each others' resources
+```bash
+$ ./rex $CL2_ARGS $TASK_ID stderr
 ```
 
-To get a list of processes:
+To get a list of processes (access is not limited to owned processes of the current user
+for demonstration purposes):
 ```bash
 $ ./rex $CL1_ARGS ps
 ```
@@ -78,6 +90,22 @@ To verify that client with UUID `$CL2_ID` is not allowed to call
 `/Rex/ListProcessInfo/`:
 ```bash
 $ ./rex $CL2_ARGS ps
+```
+
+To read the output of a process while it is (probably) still writing to it:
+```bash
+$ ./rex $CL2_ARGS read $(./rex $CL2_ARGS exec find / -maxdepth 6 2>/dev/null | grep \\-) stdout
+```
+
+To send `SIGINT` to a process while it's running:
+```bash
+$ TASK_ID=$(./rex $CL2_ARGS exec sleep 100 2>/dev/null | grep \\-)
+$ ./rex $CL2_ARGS kill $TASK_ID
+```
+To verify that an error is received if a signal is sent to a process that is
+not running:
+```bash
+$ ./rex $CL2_ARGS kill $TASK_ID
 ```
 
 ## Design
