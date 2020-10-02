@@ -29,17 +29,17 @@ func (ps *ProcessServer) Exec(ctx context.Context,
 	path string, args ...string) (uuid.UUID, error) {
 	cmd := exec.Command(path, args...)
 
-	processID := uuid.New().String()
-	stdout, stderr, err := ps.createOutputFiles(processID)
-
 	ownerID, ok := rex.UserIDFromContext(ctx)
 	if !ok {
 		return uuid.Nil, rex.ErrUnauthenticated
 	}
 
+	processID := uuid.New().String()
+	stdout, stderr, err := ps.createOutputFiles(processID)
 	if err != nil {
 		return uuid.Nil, err
 	}
+
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 
@@ -104,10 +104,14 @@ func (ps *ProcessServer) Kill(ctx context.Context, processID uuid.UUID, signal i
 	if !ok {
 		return rex.ErrUnauthenticated
 	}
-	if mustBeProcessHandle.(*processHandle).ownerID != userID {
+	handle := mustBeProcessHandle.(*processHandle)
+	if handle.ownerID != userID {
 		return rex.ErrAccessDenied
 	}
-	return mustBeProcessHandle.(*processHandle).cmd.Process.Signal(syscall.Signal(signal))
+
+	handle.m.Lock()
+	defer handle.m.Unlock()
+	return handle.cmd.Process.Signal(syscall.Signal(signal))
 }
 
 // Read reads either the stdout or the stderr of the given process
@@ -145,18 +149,21 @@ func (ps *ProcessServer) registerProcess(processID, ownerID string,
 		id:      processID,
 		ownerID: ownerID,
 		cmd:     cmd,
+		running: true,
 		create:  create,
 		pid:     cmd.Process.Pid,
 	}
 	ps.processes.Store(processID, handle)
 	go func() {
 		err := handle.cmd.Wait()
-		func() {
-			handle.m.Lock()
-			defer handle.m.Unlock()
-			handle.exit = time.Now().UTC()
-			handle.waitError = err
-		}()
+
+		handle.m.Lock()
+		defer handle.m.Unlock()
+
+		handle.running = false
+		handle.exit = time.Now().UTC()
+		handle.exitcode = handle.cmd.ProcessState.ExitCode()
+		handle.waitError = err
 	}()
 }
 
@@ -200,6 +207,8 @@ type processHandle struct {
 	cmd       *exec.Cmd
 	create    time.Time
 	exit      time.Time
+	exitcode  int
+	running   bool
 	waitError error
 	m         sync.RWMutex
 }
@@ -210,15 +219,15 @@ func (ph *processHandle) getProcessInfo() rex.ProcessInfo {
 	info := rex.ProcessInfo{
 		ID:      uuid.MustParse(ph.id),
 		PID:     ph.pid,
-		Running: ph.exit.IsZero(),
+		Running: ph.running,
 		Path:    ph.cmd.Path,
 		Args:    ph.cmd.Args[1:],
 		Create:  ph.create,
 		OwnerID: uuid.MustParse(ph.ownerID),
 	}
-	if ph.cmd.ProcessState != nil {
+	if !ph.running {
 		info.Exit = ph.exit
-		info.ExitCode = ph.cmd.ProcessState.ExitCode()
+		info.ExitCode = ph.exitcode
 	}
 	return info
 }
