@@ -36,18 +36,55 @@ var (
 	pathToCert   string
 	pathToKey    string
 	dataDirFlag  string
+	serveAddr    string
 )
 
-// TODO: lots of duplication in rex/main.go and rexd/main.go
 func main() {
 	log.SetLevel(log.DebugLevel)
+	parseAndValidate()
 
+	var policies []rex_grpc.Policy
+	for _, fl := range policyFlags {
+		x, err := rex_grpc.SimpleAccessRuleFromJSON([]byte(fl))
+		if err != nil {
+			log.Fatalf("Policy argument malformed: %v", err)
+		}
+		policies = append(policies, x)
+	}
+
+	lis, err := net.Listen("tcp", serveAddr)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	tlsCredentials := getTLSCredentials()
+	policyEnforcer := rex_grpc.NewPolicyEnforcer(policies...)
+
+	grpcServer := grpc.NewServer(grpc.Creds(tlsCredentials),
+		grpc.ChainUnaryInterceptor(
+			rex_grpc.AuthInfoInterceptor,
+			rex_grpc.PolicyEnforcementInterceptor(policyEnforcer),
+			rex_grpc.ErrorMarshallerInterceptor,
+		),
+	)
+	linuxProcessServer := localexec.NewServer(dataDirFlag)
+	rexGRPCServer := rex_grpc.NewServer(linuxProcessServer)
+
+	proto.RegisterRexServer(grpcServer, rexGRPCServer)
+	log.Debugln("Serving...")
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatalln(err.Error())
+	}
+}
+
+func parseAndValidate() {
 	flag.Var(&policyFlags, "policy",
 		"JSON formatted policy with keys Principal, Action, and Effect. Can be passed multiple times.")
 
 	flag.StringVar(&pathToCACert, "ca", "", "path to ca certificate in pem format")
 	flag.StringVar(&pathToCert, "cert", "", "path to server certificate in pem format")
 	flag.StringVar(&pathToKey, "key", "", "path to server private key in pem format")
+	flag.StringVar(&serveAddr, "addr", "", "serve address of format [ip]:port")
 
 	dataDirDefault := os.Getenv("TMPDIR")
 	if len(dataDirDefault) == 0 {
@@ -70,21 +107,9 @@ func main() {
 	if pathToCert == "" {
 		log.Fatalln("Missing -cert arg")
 	}
+}
 
-	var policies []rex_grpc.Policy
-	for _, fl := range policyFlags {
-		x, err := rex_grpc.SimpleAccessRuleFromJSON([]byte(fl))
-		if err != nil {
-			log.Fatalf("Policy argument malformed: %v", err)
-		}
-		policies = append(policies, x)
-	}
-
-	lis, err := net.Listen("tcp", "localhost:9090")
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-
+func getTLSCredentials() credentials.TransportCredentials {
 	caPool := x509.NewCertPool()
 	if ok := caPool.AppendCertsFromPEM(io.ReadFileOrFatal(pathToCACert)); !ok {
 		log.Fatalln("CA cert malformed")
@@ -103,24 +128,5 @@ func main() {
 		ClientAuth:         tls.RequireAndVerifyClientCert,
 		ClientCAs:          caPool,
 	}
-
-	tlsCredentials := credentials.NewTLS(config)
-
-	policyEnforcer := rex_grpc.NewPolicyEnforcer(policies...)
-
-	grpcServer := grpc.NewServer(grpc.Creds(tlsCredentials),
-		grpc.ChainUnaryInterceptor(
-			rex_grpc.AuthInfoInterceptor,
-			rex_grpc.PolicyEnforcementInterceptor(policyEnforcer),
-			rex_grpc.ErrorMarshallerInterceptor,
-		),
-	)
-	linuxProcessServer := localexec.NewServer(dataDirFlag)
-	rexGRPCServer := rex_grpc.NewServer(linuxProcessServer)
-
-	proto.RegisterRexServer(grpcServer, rexGRPCServer)
-	log.Debugln("Serving...")
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalln(err.Error())
-	}
+	return credentials.NewTLS(config)
 }
