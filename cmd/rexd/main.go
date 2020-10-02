@@ -84,7 +84,7 @@ func parseAndValidate() {
 	flag.StringVar(&pathToCACert, "ca", "", "path to ca certificate in pem format")
 	flag.StringVar(&pathToCert, "cert", "", "path to server certificate in pem format")
 	flag.StringVar(&pathToKey, "key", "", "path to server private key in pem format")
-	flag.StringVar(&serveAddr, "addr", "", "serve address of format [ip]:port")
+	flag.StringVar(&serveAddr, "addr", "localhost:9090", "serve address of format [ip]:port")
 
 	dataDirDefault := os.Getenv("TMPDIR")
 	if len(dataDirDefault) == 0 {

@@ -30,6 +30,7 @@ var (
 	pathToCACert string
 	pathToCert   string
 	pathToKey    string
+	serverAddr   string
 )
 
 func main() {
@@ -161,6 +162,7 @@ func parseAndValidate() {
 	flag.StringVar(&pathToCACert, "ca", "", "path to ca certificate in pem format")
 	flag.StringVar(&pathToCert, "cert", "", "path to server certificate in pem format")
 	flag.StringVar(&pathToKey, "key", "", "path to server private key in pem format")
+	flag.StringVar(&serverAddr, "addr", "localhost:9090", "server address of form [ip]:port")
 
 	flag.Parse()
 
@@ -197,7 +199,7 @@ func getGRPCConnection() *grpc.ClientConn {
 	}
 
 	tlsCredentials := credentials.NewTLS(config)
-	conn, err := grpc.Dial("localhost:9090",
+	conn, err := grpc.Dial(serverAddr,
 		grpc.WithTransportCredentials(tlsCredentials),
 		grpc.WithUnaryInterceptor(rex_grpc.ErrorUnmarshallerInterceptor))
 	if err != nil {
