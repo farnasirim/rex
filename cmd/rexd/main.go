@@ -106,7 +106,7 @@ func main() {
 	grpcServer := grpc.NewServer(grpc.Creds(tlsCredentials),
 		grpc.ChainUnaryInterceptor(
 			rex_grpc.AuthInfoInterceptor,
-			policyEnforcer.PolicyEnforcementInterceptor,
+			policyEnforcer.PolicyEnforcementInterceptor(policyEnforcer),
 			rex_grpc.ErrorMarshallerInterceptor,
 		),
 	)

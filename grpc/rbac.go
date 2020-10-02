@@ -111,17 +111,19 @@ func (e *PolicyEnforcer) Enforce(ctx context.Context) (bool, bool) {
 }
 
 // PolicyEnforcementInterceptor authorizes the execution of handler
-func (e *PolicyEnforcer) PolicyEnforcementInterceptor(
-	ctx context.Context,
-	req interface{},
-	info *grpc.UnaryServerInfo,
-	handler grpc.UnaryHandler) (resp interface{}, err error) {
-	ctx = context.WithValue(ctx, methodNameContextKey, info.FullMethod)
+func (e *PolicyEnforcer) PolicyEnforcementInterceptor(p Policy) grpc.UnaryServerInterceptor {
+	return func(
+		ctx context.Context,
+		req interface{},
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler) (resp interface{}, err error) {
+		ctx = context.WithValue(ctx, methodNameContextKey, info.FullMethod)
 
-	if authorized, _ := e.Enforce(ctx); !authorized {
-		return nil, status.Errorf(codes.PermissionDenied,
-			rex.ErrAccessDenied.Error())
+		if authorized, applies := e.Enforce(ctx); !applies || !authorized {
+			return nil, status.Errorf(codes.PermissionDenied,
+				rex.ErrAccessDenied.Error())
+		}
+
+		return handler(ctx, req)
 	}
-
-	return handler(ctx, req)
 }
