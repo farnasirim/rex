@@ -71,6 +71,7 @@ func main() {
 		x, err := rex_grpc.SimpleAccessRuleFromJSON([]byte(fl))
 		if err != nil {
 			log.Warnf("Policy argument ignored: %v", err)
+			continue
 		}
 		policies = append(policies, x)
 	}
