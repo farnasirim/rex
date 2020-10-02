@@ -127,7 +127,7 @@ func PolicyEnforcementInterceptor(p Policy) grpc.UnaryServerInterceptor {
 		req interface{},
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler) (resp interface{}, err error) {
-		ctx = context.WithValue(ctx, rex.MethodNameContextKey, info.FullMethod)
+		ctx = rex.WithMethodName(ctx, info.FullMethod)
 
 		if authorized, applies := p.Enforce(ctx); !applies || !authorized {
 			return nil, status.Errorf(codes.PermissionDenied,

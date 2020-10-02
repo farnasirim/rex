@@ -50,8 +50,8 @@ type ProcessInfo struct {
 type rexContextKey string
 
 const (
-	UserIDContextKey     rexContextKey = "Rex-Context-UserID"
-	MethodNameContextKey rexContextKey = "Rex-Context-MethodName"
+	userIDContextKey     = "Rex-Context-UserID"
+	methodNameContextKey = "Rex-Context-MethodName"
 )
 
 var (
@@ -79,11 +79,19 @@ var (
 )
 
 func UserIDFromContext(ctx context.Context) (string, bool) {
-	val, ok := ctx.Value(UserIDContextKey).(string)
+	val, ok := ctx.Value(userIDContextKey).(string)
 	return val, ok
 }
 
 func MethodNameFromContext(ctx context.Context) (string, bool) {
-	val, ok := ctx.Value(MethodNameContextKey).(string)
+	val, ok := ctx.Value(methodNameContextKey).(string)
 	return val, ok
+}
+
+func WithUserID(ctx context.Context, userID string) context.Context {
+	return context.WithValue(ctx, userIDContextKey, userID)
+}
+
+func WithMethodName(ctx context.Context, methodName string) context.Context {
+	return context.WithValue(ctx, methodNameContextKey, methodName)
 }

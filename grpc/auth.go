@@ -41,10 +41,7 @@ func AuthInfoInterceptor(
 	}
 
 	log.Debugln("CN:", tlsInfo.State.PeerCertificates[0].Subject.CommonName)
-	ctx = context.WithValue(ctx,
-		rex.UserIDContextKey,
-		tlsInfo.State.PeerCertificates[0].Subject.CommonName,
-	)
+	ctx = rex.WithUserID(ctx, tlsInfo.State.PeerCertificates[0].Subject.CommonName)
 
 	log.Debugln(info.FullMethod)
 
