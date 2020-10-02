@@ -9,6 +9,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/go-playground/validator/v10"
+
 	"github.com/farnasirim/rex"
 )
 
@@ -23,9 +25,9 @@ type Policy interface {
 // SimpleAccessRule defines access rules of the form
 // "User is/is not allowed to execute Action"
 type SimpleAccessRule struct {
-	Principal string
-	Action    string
-	Effect    string
+	Principal string `validate:"required"`
+	Action    string `validate:"required"`
+	Effect    string `validate:"oneof=allow deny"`
 }
 
 // Enforce returns (lowercase(Effect) == "allow", true) if principal and action
@@ -62,9 +64,18 @@ func wildcardMatch(maybeWildcard, str string) bool {
 
 // SimpleAccessRuleFromJSON creates an access rule from its json representation
 func SimpleAccessRuleFromJSON(marshalledAccessRule []byte) (*SimpleAccessRule, error) {
-	var ret SimpleAccessRule
-	err := json.Unmarshal(marshalledAccessRule, &ret)
-	return &ret, err
+	validate := validator.New()
+
+	var rule SimpleAccessRule
+	if err := json.Unmarshal(marshalledAccessRule, &rule); err != nil {
+		return nil, err
+	}
+	rule.Effect = strings.ToLower(rule.Effect)
+	if err := validate.Struct(&rule); err != nil {
+		return nil, err
+	}
+
+	return &rule, nil
 }
 
 type PolicyEnforcer struct {
