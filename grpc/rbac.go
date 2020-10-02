@@ -48,7 +48,7 @@ func (r *SimpleAccessRule) Enforce(ctx context.Context) (bool, bool) {
 	if !ok {
 		return false, false
 	}
-	methodName, ok := rex.MethodNameFromContext(ctx)
+	methodName, ok := methodNameFromContext(ctx)
 	if !ok {
 		return false, false
 	}
@@ -127,7 +127,7 @@ func PolicyEnforcementInterceptor(p Policy) grpc.UnaryServerInterceptor {
 		req interface{},
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler) (resp interface{}, err error) {
-		ctx = rex.WithMethodName(ctx, info.FullMethod)
+		ctx = withMethodName(ctx, info.FullMethod)
 
 		if authorized, applies := p.Enforce(ctx); !applies || !authorized {
 			return nil, status.Errorf(codes.PermissionDenied,

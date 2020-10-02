@@ -8,10 +8,13 @@ import (
 	"github.com/google/uuid"
 )
 
+// OutputStream specifies either stdout or stderr of a process
 type OutputStream int
 
 const (
+	// StdoutStream specifies stdout of a process
 	StdoutStream OutputStream = 0x1
+	// StderrStream specifies stderr of a process
 	StderrStream OutputStream = 0x2
 )
 
@@ -35,23 +38,36 @@ type Service interface {
 	Read(ctx context.Context, processID uuid.UUID, target OutputStream) ([]byte, error)
 }
 
+// ProcessInfo contains various informations about a process.
 type ProcessInfo struct {
-	ID       uuid.UUID
-	PID      int
+	// ID is the unique identifier of a process.
+	ID uuid.UUID
+	// PID is the pid of the process in the OS. Can be recycled by the OS
+	// after the process exits.
+	PID int
+	// ExitCode will hold the exit code of the process after it exits. It is
+	// undefined if Running=true.
 	ExitCode int
-	Running  bool
-	Path     string
-	Args     []string
-	OwnerID  uuid.UUID
-	Create   time.Time
-	Exit     time.Time
+	// Running specifies whether or not the process is currently running.
+	Running bool
+	// Path is the address to the executable corresponding to the process.
+	Path string
+	// Args is the list of the command line arguments that were passed to the
+	// process upon creation.
+	Args []string
+	// OwnerID is the unique identifier of the owner of the process.
+	OwnerID uuid.UUID
+	// Create is the point in time (UTC) at which the process was created.
+	Create time.Time
+	// Exit is the point in time (UTC) at which the process exited. It is
+	// undefined if Running=true.
+	Exit time.Time
 }
 
 type rexContextKey string
 
 const (
-	userIDContextKey     = "Rex-Context-UserID"
-	methodNameContextKey = "Rex-Context-MethodName"
+	userIDContextKey rexContextKey = "Rex-Context-UserID"
 )
 
 var (
@@ -78,20 +94,15 @@ var (
 	ErrInvalidArgument = errors.New("not found")
 )
 
+// UserIDFromContext gets the unique identifier of the API user. Returns
+// false as the second argument if no such key is found in the context.
 func UserIDFromContext(ctx context.Context) (string, bool) {
 	val, ok := ctx.Value(userIDContextKey).(string)
 	return val, ok
 }
 
-func MethodNameFromContext(ctx context.Context) (string, bool) {
-	val, ok := ctx.Value(methodNameContextKey).(string)
-	return val, ok
-}
-
+// WithUserID adds the supplied user ID to the given context and returns
+// the resulting context.
 func WithUserID(ctx context.Context, userID string) context.Context {
 	return context.WithValue(ctx, userIDContextKey, userID)
-}
-
-func WithMethodName(ctx context.Context, methodName string) context.Context {
-	return context.WithValue(ctx, methodNameContextKey, methodName)
 }
