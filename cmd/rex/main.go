@@ -77,7 +77,7 @@ func main() {
 		if len(rest) < 1 {
 			log.Fatalln("Missing process id")
 		} else if len(rest) > 1 {
-			log.Fatalln("Too many arguments: got: %d, expected: %d", len(rest), 1)
+			log.Fatalf("Too many arguments: got: %d, expected: %d", len(rest), 1)
 		}
 
 		processID, err := uuid.Parse(rest[0])
@@ -116,7 +116,7 @@ func main() {
 		if len(rest) < 1 {
 			log.Fatalln("Missing processID argument")
 		} else if len(rest) > 1 {
-			log.Fatalln("Too many arguments: got: %d, expected: %d", len(rest), 1)
+			log.Fatalf("Too many arguments: got: %d, expected: %d", len(rest), 1)
 		}
 		processUUID, err := uuid.Parse(rest[0])
 		if err != nil {
@@ -128,7 +128,7 @@ func main() {
 		}
 		output, err := yaml.Marshal(procInfo)
 		if err != nil {
-			log.Fatalln("Error while presenting results: %v", err)
+			log.Fatalf("Error while presenting results: %v", err)
 		}
 		fmt.Print(string(output))
 
@@ -138,7 +138,7 @@ func main() {
 		} else if len(rest) == 1 {
 			log.Fatalln("Missing target stream (stdout/stderr)")
 		} else if len(rest) > 2 {
-			log.Fatalln("Too many arguments: got: %d, expected: %d", len(rest), 2)
+			log.Fatalf("Too many arguments: got: %d, expected: %d", len(rest), 2)
 		}
 		processID, err := uuid.Parse(rest[0])
 		if err != nil {
