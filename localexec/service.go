@@ -166,6 +166,8 @@ func (ps *ProcessServer) getStderrFilename(processID string) string {
 	return path.Join(ps.dataDir, "proc", processID, "stderr")
 }
 
+// createOutputFiles leaves the responsibility of closing the returned files
+// to the caller if error != nil
 func (ps *ProcessServer) createOutputFiles(processID string) (*os.File, *os.File, error) {
 	err := os.MkdirAll(path.Dir(ps.getStderrFilename(processID)), 0755)
 	if err != nil {
@@ -178,7 +180,11 @@ func (ps *ProcessServer) createOutputFiles(processID string) (*os.File, *os.File
 
 	stderr, err := os.Create(ps.getStderrFilename(processID))
 	if err != nil {
-		defer stdout.Close()
+		{
+			if err := stdout.Close(); err != nil {
+				log.Errorf("Failed to close stdout file: %v", err)
+			}
+		}
 		return nil, nil, err
 	}
 
