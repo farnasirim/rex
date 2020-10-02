@@ -22,7 +22,6 @@ func AuthInfoInterceptor(
 	info *grpc.UnaryServerInfo,
 	handler grpc.UnaryHandler) (resp interface{}, err error) {
 
-	log.Debugln("In grpc.Exec")
 	grpcPeer, ok := peer.FromContext(ctx)
 	if !ok {
 		return nil, status.Errorf(codes.Unauthenticated,
@@ -41,7 +40,7 @@ func AuthInfoInterceptor(
 		log.Warnln("Peer used multiple certificates. Using the first one.")
 	}
 
-	log.Debugln(tlsInfo.State.PeerCertificates[0].Subject.CommonName)
+	log.Debugln("CN:", tlsInfo.State.PeerCertificates[0].Subject.CommonName)
 	ctx = context.WithValue(ctx,
 		rex.UserIDContextKey,
 		tlsInfo.State.PeerCertificates[0].Subject.CommonName,
