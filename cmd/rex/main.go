@@ -77,7 +77,7 @@ func main() {
 		if len(rest) < 1 {
 			log.Fatalln("Missing process id")
 		} else if len(rest) > 1 {
-			log.Fatalf("Too many arguments: got: %d, expected: %d", len(rest), 1)
+			log.Fatalf("Too many arguments to kill: got: %d, expected: %d", len(rest), 1)
 		}
 
 		processID, err := uuid.Parse(rest[0])
@@ -91,6 +91,9 @@ func main() {
 			log.Fatalln(err.Error())
 		}
 	case "ps":
+		if len(rest) > 0 {
+			log.Warnf("Ignoring %d extra arguments to %q", len(rest), "ps")
+		}
 		processes, err := client.ListProcessInfo(ctx)
 		if err != nil {
 			log.Fatalln(err.Error())
@@ -116,7 +119,7 @@ func main() {
 		if len(rest) < 1 {
 			log.Fatalln("Missing processID argument")
 		} else if len(rest) > 1 {
-			log.Fatalf("Too many arguments: got: %d, expected: %d", len(rest), 1)
+			log.Fatalf("Too many arguments to get: got: %d, expected: %d", len(rest), 1)
 		}
 		processUUID, err := uuid.Parse(rest[0])
 		if err != nil {
