@@ -32,11 +32,11 @@ type SimpleAccessRule struct {
 // match those in the context, (false, false) otherwise. Its Principal and
 // Action fields support "*" to always match.
 func (r *SimpleAccessRule) Enforce(ctx context.Context) (bool, bool) {
-	userID, ok := stringFromContext(ctx, userIDContextKey)
+	userID, ok := ctx.Value(userIDContextKey).(string)
 	if !ok {
 		return false, false
 	}
-	methodName, ok := stringFromContext(ctx, methodNameContextKey)
+	methodName, ok := ctx.Value(methodNameContextKey).(string)
 	if !ok {
 		return false, false
 	}
