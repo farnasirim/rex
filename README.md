@@ -97,14 +97,17 @@ To read the output of a process while it is (probably) still writing to it:
 $ ./rex $CL2_ARGS read $(./rex $CL2_ARGS exec find / -maxdepth 6 2>/dev/null | grep \\-) stdout
 ```
 
-To send `SIGINT` to a process while it's running:
+To send check the status of a process and send `SIGINT` to it while it's running:
 ```bash
 $ TASK_ID=$(./rex $CL2_ARGS exec sleep 100 2>/dev/null | grep \\-)
+$ ./rex $CL2_ARGS get $TASK_ID
 $ ./rex $CL2_ARGS kill $TASK_ID
 ```
+
 To verify that an error is received if a signal is sent to a process that is
 not running:
 ```bash
+$ ./rex $CL2_ARGS get $TASK_ID
 $ ./rex $CL2_ARGS kill $TASK_ID
 ```
 
