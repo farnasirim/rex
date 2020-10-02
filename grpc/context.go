@@ -7,7 +7,7 @@ import (
 type grpcContextKey string
 
 const (
-	methodNameContextKey = "Rex-GRPC-Context-MethodName"
+	methodNameContextKey grpcContextKey = "Rex-GRPC-Context-MethodName"
 )
 
 func methodNameFromContext(ctx context.Context) (string, bool) {
