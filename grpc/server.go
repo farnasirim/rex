@@ -41,6 +41,8 @@ func (s *Server) ListProcessInfo(ctx context.Context, req *proto.ListProcessInfo
 	return &proto.ProcessInfoList{Processes: protoInfos}, nil
 }
 
+// GetProcessInfo translates the request to get the info of a specific process
+// from the gRPC API to the native API.
 func (s *Server) GetProcessInfo(ctx context.Context, req *proto.GetProcessInfoRequest) (*proto.ProcessInfo, error) {
 	processUUID, err := uuid.Parse(req.ProcessUUID)
 	if err != nil {
@@ -54,6 +56,9 @@ func (s *Server) GetProcessInfo(ctx context.Context, req *proto.GetProcessInfoRe
 	return processInfoProtoFromNative(processInfo), nil
 }
 
+// Kill will send the specified signal to the specified proces. Here it will be
+// translated from the gRPC API to the native API and passed to the concrete
+// implementation.
 func (s *Server) Kill(ctx context.Context, req *proto.KillRequest) (*proto.KillResponse, error) {
 	processUUID, err := uuid.Parse(req.GetProcessUUID())
 	if err != nil {
@@ -62,6 +67,8 @@ func (s *Server) Kill(ctx context.Context, req *proto.KillRequest) (*proto.KillR
 	return &proto.KillResponse{}, s.ps.Kill(ctx, processUUID, int(req.GetSignal()))
 }
 
+// Read forwards a requet to read the stdout/stderr of a process to the
+// underlying (concrete) rex.Service.
 func (s *Server) Read(ctx context.Context, req *proto.ReadRequest) (*proto.ReadResponse, error) {
 	processUUID, err := uuid.Parse(req.GetProcessUUID())
 	if err != nil {

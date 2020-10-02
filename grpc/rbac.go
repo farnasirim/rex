@@ -88,10 +88,14 @@ func SimpleAccessRuleFromJSON(marshalledAccessRule []byte) (*SimpleAccessRule, e
 	return &rule, nil
 }
 
+// PolicyEnforcer implements Policy by chaining together other policies and
+// executing them one by one, defaulting
 type PolicyEnforcer struct {
 	policies []Policy
 }
 
+// NewPolicyEnforcer creates a PolicyEnforcer from a list (ordered chain)
+// of objects satisfying the Policy interface
 func NewPolicyEnforcer(policies ...Policy) *PolicyEnforcer {
 	return &PolicyEnforcer{
 		policies: policies,
@@ -110,10 +114,9 @@ func (e *PolicyEnforcer) Enforce(ctx context.Context) (bool, bool) {
 		if thisApplies {
 			if !thisVerdict {
 				return false, true
-			} else {
-				applies = true
-				verdict = true
 			}
+			applies = true
+			verdict = true
 		}
 	}
 

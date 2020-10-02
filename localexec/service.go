@@ -55,7 +55,9 @@ func (ps *ProcessServer) Exec(ctx context.Context,
 	return uuid.MustParse(processID), nil
 }
 
-// Exec creates a process from the supplied path and args
+// ListProcessInfo returs a list of all processes that have ever been
+// successfully Exec'd into the system, sorted by their creation time (newest
+// first).
 func (ps *ProcessServer) ListProcessInfo(ctx context.Context) ([]rex.ProcessInfo, error) {
 	var infoList []rex.ProcessInfo
 	ps.processes.Range(func(key, value interface{}) bool {
@@ -221,6 +223,8 @@ func (ph *processHandle) getProcessInfo() rex.ProcessInfo {
 	return info
 }
 
+// NewServer creates a ProcessServer which is a concrete implementation of
+// rex.Server.
 func NewServer(dataDir string) *ProcessServer {
 	return &ProcessServer{
 		dataDir: dataDir,

@@ -61,7 +61,7 @@ func errorChainFromJSON(marshalledError string) (*errorChain, error) {
 	return &chain, nil
 }
 
-// ErrorUnarshallerInterceptor unmarshals the returned error from the grpc
+// ErrorUnmarshallerInterceptor unmarshals the returned error from the grpc
 // call into an error chain if it is the marshalled form of an error chain
 func ErrorUnmarshallerInterceptor(
 	ctx context.Context,
