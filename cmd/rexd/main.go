@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"flag"
-	"io/ioutil"
 	"net"
 	"os"
 	"path"
@@ -14,6 +13,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/farnasirim/rex/cmd/internal/io"
 	rex_grpc "github.com/farnasirim/rex/grpc"
 	"github.com/farnasirim/rex/localexec"
 	"github.com/farnasirim/rex/proto"
@@ -30,19 +30,13 @@ func (f *variadicFlag) String() string {
 	return ""
 }
 
-var policyFlags variadicFlag
-var pathToCACert string
-var pathToCert string
-var pathToKey string
-var dataDirFlag string
-
-func readFileOrFatal(filepath string) []byte {
-	content, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		log.Fatalf("Failed to read %s: %v", filepath, err)
-	}
-	return content
-}
+var (
+	policyFlags  variadicFlag
+	pathToCACert string
+	pathToCert   string
+	pathToKey    string
+	dataDirFlag  string
+)
 
 // TODO: lots of duplication in rex/main.go and rexd/main.go
 func main() {
@@ -92,7 +86,7 @@ func main() {
 	}
 
 	caPool := x509.NewCertPool()
-	if ok := caPool.AppendCertsFromPEM(readFileOrFatal(pathToCACert)); !ok {
+	if ok := caPool.AppendCertsFromPEM(io.ReadFileOrFatal(pathToCACert)); !ok {
 		log.Fatalln("CA cert malformed")
 	}
 

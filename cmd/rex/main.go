@@ -7,7 +7,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"syscall"
@@ -23,6 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/farnasirim/rex"
+	"github.com/farnasirim/rex/cmd/internal/io"
 	rex_grpc "github.com/farnasirim/rex/grpc"
 )
 
@@ -178,17 +178,9 @@ func parseAndValidate() {
 
 }
 
-func readFileOrFatal(filepath string) []byte {
-	content, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		log.Fatalf("Failed to read %s: %v\n", filepath, err)
-	}
-	return content
-}
-
 func getGRPCConnection() *grpc.ClientConn {
 	caPool := x509.NewCertPool()
-	if ok := caPool.AppendCertsFromPEM(readFileOrFatal(pathToCACert)); !ok {
+	if ok := caPool.AppendCertsFromPEM(io.ReadFileOrFatal(pathToCACert)); !ok {
 		log.Fatalln("CA cert malformed")
 	}
 
