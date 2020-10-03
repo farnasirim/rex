@@ -26,8 +26,18 @@ type Policy interface {
 // "User is/is not allowed to execute Action"
 type SimpleAccessRule struct {
 	Principal string `validate:"required"`
-	Action    string `validate:"required"`
-	Effect    string `validate:"oneof=allow deny"`
+	// TODO: extract method names from the grpc service. Currently I don't see
+	// a clean way to do this. We can register a dummy service which will
+	// introduce proto._Rex_serviceDesc to the grpc server upon registration,
+	// They GetServiceInfo will reveal the method names. However to avoid
+	// reconstructing the full method name ourselves, we need to extract those
+	// directly from interceptors. One idea would be to loop over the method
+	// names of the above dummy service and through server reflection send a
+	// dummy request to each of its endpoints, allowing for the interceptor
+	// to be invoked. There we steal the full name using UnaryServerInfo.
+	// All of this happens before server startup time.
+	Action string `validate:"oneof=* /Rex/Exec /Rex/Kill /Rex/GetProcessInfo /Rex/ListProcessInfo /Rex/Read"`
+	Effect string `validate:"oneof=allow deny"`
 }
 
 // Enforce returns (lowercase(Effect) == "allow", true) if principal and action
