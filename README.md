@@ -1,6 +1,34 @@
 # Rex: Remote process execution service
 
-## build
+## TODO
+ - Command line parsing and error handling is tightly knitted with the code.
+   which might prevent good error reporting. Also makes it non-trivial to
+   keep cli documentation in sync with code. Given some more time, I would
+   have cleaned this up to separate the CLI function implementations away from
+   CLI syntax (and possibly semantics) descriptions.
+   (the [cobra](https://github.com/spf13/cobra) and
+   [viper](https://github.com/spf13/viper) combo is my favorite solution).
+ - If serializing/deserializing error chains is useful and keeping it would
+   be beneficial, it has to be clear what it does with grpc status codes and
+   errors that are generated in the grpc layer itself.
+ - Authz: Using grpc's authorization [engine](https://pkg.go.dev/google.golang.org/grpc/security/authorization@v0.0.0-20201001231224-bebda80b05da/engine) or any well known authorization scheme
+   would have made things less arbitrary and spontaneous.
+ - Use of UUIDs (vs strings) for ID objects is almost arbitrary across the
+   code. It would be better to completely get rid of the UUID-ness in the
+   API descriptions as an implementation detail and encapsulate all of its
+   usage in `localexec`. Everyone else will treat unique IDs as unique strings
+   without any certain conditions.
+ - A bit low level, but in retrospect `rex.ProcessInfo` being treated as a
+   value type (as opposed to pointer type) across API boundaries was a mistake.
+   Not only there is not enough reason to treat it as a value type, but also
+   it's nullability is quite desired across the APIs.
+ - Also low level: creating global structs (`rex.ProcessInfo`) must be done
+   with more care. Currently no API is safe against sudden change to addition
+   of a field to `rex.ProcessInfo`. The behavior is not unnatural as the new
+   field will simply be unsupported across the system, but still it would have
+   been nice if we could have a compile time trap for this. Maybe `NewProcessInfo`?
+
+## Build
 Install [gRPC toolkit](https://grpc.io/docs/languages/go/quickstart/) for go.
 Afterwards you can build the client and server binaries:
 ```bash
