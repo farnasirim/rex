@@ -9,7 +9,6 @@ $ make rex rexd
 
 Visit `scripts/README.md` to generate certificates. You can also use
 pre-generated certificates in `./fixtures/tls/{client,server,ca}`.
-
 ## Run
 
 You can save the clients' UUIDs for future reference:
@@ -109,6 +108,15 @@ not running:
 ```bash
 $ ./rex $CL2_ARGS get $TASK_ID
 $ ./rex $CL2_ARGS kill $TASK_ID
+```
+
+To run tests:
+```
+$ make test
+```
+To show coverage:
+```
+$ make coverage
 ```
 
 ## Design
