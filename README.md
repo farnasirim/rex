@@ -138,6 +138,13 @@ $ ./rex $CL2_ARGS get $TASK_ID
 $ ./rex $CL2_ARGS kill $TASK_ID
 ```
 
+An optional timeout (milliseconds) argument can be passed to the cli:
+```
+$ TASK_ID=$(./rex $CL2_ARGS exec find / | grep \\-)
+$ ./rex $CL2_ARGS -timeout 1000 read $TASK_ID stdout
+$ ./rex $CL2_ARGS kill $TASK_ID
+```
+
 To run tests:
 ```
 $ make test
