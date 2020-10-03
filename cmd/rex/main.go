@@ -26,6 +26,10 @@ import (
 	rex_grpc "github.com/farnasirim/rex/grpc"
 )
 
+const (
+	maxMsgSize int = 1e12
+)
+
 var (
 	pathToCACert string
 	pathToCert   string
@@ -213,7 +217,9 @@ func getGRPCConnection() *grpc.ClientConn {
 	tlsCredentials := credentials.NewTLS(config)
 	conn, err := grpc.Dial(serverAddr,
 		grpc.WithTransportCredentials(tlsCredentials),
-		grpc.WithUnaryInterceptor(rex_grpc.ErrorUnmarshallerInterceptor))
+		grpc.WithUnaryInterceptor(rex_grpc.ErrorUnmarshallerInterceptor),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxMsgSize)),
+	)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
