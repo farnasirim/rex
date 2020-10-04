@@ -9,7 +9,7 @@ import (
 
 func TestSimpleAccessRule_MatchPrincipal_Wildcard_Reverse(t *testing.T) {
 	rule, err := SimpleAccessRuleFromJSON([]byte(`
-	{"principal": "username", "effect": "allow", "action": "/path/to/action"}
+	{"principal": "username", "effect": "allow", "action": "/Rex/Exec"}
 	`))
 	if err != nil {
 		t.Errorf("Caught error while creating simple access rule from JSON: %v", err)
