@@ -50,7 +50,7 @@ required policies:
 ```bash
 $ ./rexd \
     -ca fixtures/tls/ca/ca.crt -cert fixtures/tls/server/1.pem -key fixtures/tls/server/1.key \
-    -datadir data
+    -datadir data \
     -policy '{"Principal": "*", "Action": "*", "Effect": "Allow"}' \
     -policy '{"Principal": "'$CL2_ID'", "Action": "/Rex/ListProcessInfo", "Effect": "Deny"}'
 ```
