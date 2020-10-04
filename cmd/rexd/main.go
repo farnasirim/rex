@@ -70,7 +70,7 @@ func main() {
 	for _, fl := range policyFlags {
 		x, err := rex_grpc.SimpleAccessRuleFromJSON([]byte(fl))
 		if err != nil {
-			log.Fatalln("Policy argument malformed: %v", err)
+			log.Fatalf("Policy argument malformed: %v", err)
 		}
 		policies = append(policies, x)
 	}
