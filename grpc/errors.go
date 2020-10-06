@@ -17,7 +17,10 @@ type errorChain struct {
 }
 
 func (e *errorChain) Is(other error) bool {
-	return e.Error() == other.Error()
+	if e == other {
+		return true
+	}
+	return other != nil && e.Error() == other.Error()
 }
 
 func (e *errorChain) Error() string {
@@ -25,6 +28,9 @@ func (e *errorChain) Error() string {
 }
 
 func (e *errorChain) Unwrap() error {
+	if e.Next == nil {
+		return nil
+	}
 	return e.Next
 }
 
@@ -55,7 +61,7 @@ func errorChainFromJSON(marshalledError string) (*errorChain, error) {
 	return &chain, nil
 }
 
-// ErrorUnarshallerInterceptor unmarshals the returned error from the grpc
+// ErrorUnmarshallerInterceptor unmarshals the returned error from the grpc
 // call into an error chain if it is the marshalled form of an error chain
 func ErrorUnmarshallerInterceptor(
 	ctx context.Context,

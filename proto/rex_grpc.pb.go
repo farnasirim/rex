@@ -20,6 +20,15 @@ type RexClient interface {
 	// Exec executes a specified command and returns the result of *starting*
 	// the execution of the command.
 	Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (*ExecResponse, error)
+	// ListProcessInfo returns a list containing summarized information
+	// about each process that has been created in the system.
+	ListProcessInfo(ctx context.Context, in *ListProcessInfoRequest, opts ...grpc.CallOption) (*ProcessInfoList, error)
+	// GetProcessInfo retrieves the process info of a particular process
+	GetProcessInfo(ctx context.Context, in *GetProcessInfoRequest, opts ...grpc.CallOption) (*ProcessInfo, error)
+	// Kill sends a signal to the specified process
+	Kill(ctx context.Context, in *KillRequest, opts ...grpc.CallOption) (*KillResponse, error)
+	// Read returns the stdout or the stderr of a process
+	Read(ctx context.Context, in *ReadRequest, opts ...grpc.CallOption) (*ReadResponse, error)
 }
 
 type rexClient struct {
@@ -32,7 +41,43 @@ func NewRexClient(cc grpc.ClientConnInterface) RexClient {
 
 func (c *rexClient) Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (*ExecResponse, error) {
 	out := new(ExecResponse)
-	err := c.cc.Invoke(ctx, "/proto.Rex/Exec", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/Rex/Exec", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rexClient) ListProcessInfo(ctx context.Context, in *ListProcessInfoRequest, opts ...grpc.CallOption) (*ProcessInfoList, error) {
+	out := new(ProcessInfoList)
+	err := c.cc.Invoke(ctx, "/Rex/ListProcessInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rexClient) GetProcessInfo(ctx context.Context, in *GetProcessInfoRequest, opts ...grpc.CallOption) (*ProcessInfo, error) {
+	out := new(ProcessInfo)
+	err := c.cc.Invoke(ctx, "/Rex/GetProcessInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rexClient) Kill(ctx context.Context, in *KillRequest, opts ...grpc.CallOption) (*KillResponse, error) {
+	out := new(KillResponse)
+	err := c.cc.Invoke(ctx, "/Rex/Kill", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rexClient) Read(ctx context.Context, in *ReadRequest, opts ...grpc.CallOption) (*ReadResponse, error) {
+	out := new(ReadResponse)
+	err := c.cc.Invoke(ctx, "/Rex/Read", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,6 +91,15 @@ type RexServer interface {
 	// Exec executes a specified command and returns the result of *starting*
 	// the execution of the command.
 	Exec(context.Context, *ExecRequest) (*ExecResponse, error)
+	// ListProcessInfo returns a list containing summarized information
+	// about each process that has been created in the system.
+	ListProcessInfo(context.Context, *ListProcessInfoRequest) (*ProcessInfoList, error)
+	// GetProcessInfo retrieves the process info of a particular process
+	GetProcessInfo(context.Context, *GetProcessInfoRequest) (*ProcessInfo, error)
+	// Kill sends a signal to the specified process
+	Kill(context.Context, *KillRequest) (*KillResponse, error)
+	// Read returns the stdout or the stderr of a process
+	Read(context.Context, *ReadRequest) (*ReadResponse, error)
 	mustEmbedUnimplementedRexServer()
 }
 
@@ -55,6 +109,18 @@ type UnimplementedRexServer struct {
 
 func (*UnimplementedRexServer) Exec(context.Context, *ExecRequest) (*ExecResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Exec not implemented")
+}
+func (*UnimplementedRexServer) ListProcessInfo(context.Context, *ListProcessInfoRequest) (*ProcessInfoList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProcessInfo not implemented")
+}
+func (*UnimplementedRexServer) GetProcessInfo(context.Context, *GetProcessInfoRequest) (*ProcessInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProcessInfo not implemented")
+}
+func (*UnimplementedRexServer) Kill(context.Context, *KillRequest) (*KillResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Kill not implemented")
+}
+func (*UnimplementedRexServer) Read(context.Context, *ReadRequest) (*ReadResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Read not implemented")
 }
 func (*UnimplementedRexServer) mustEmbedUnimplementedRexServer() {}
 
@@ -72,7 +138,7 @@ func _Rex_Exec_Handler(srv interface{}, ctx context.Context, dec func(interface{
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.Rex/Exec",
+		FullMethod: "/Rex/Exec",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RexServer).Exec(ctx, req.(*ExecRequest))
@@ -80,13 +146,101 @@ func _Rex_Exec_Handler(srv interface{}, ctx context.Context, dec func(interface{
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Rex_ListProcessInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProcessInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RexServer).ListProcessInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Rex/ListProcessInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RexServer).ListProcessInfo(ctx, req.(*ListProcessInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Rex_GetProcessInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProcessInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RexServer).GetProcessInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Rex/GetProcessInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RexServer).GetProcessInfo(ctx, req.(*GetProcessInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Rex_Kill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(KillRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RexServer).Kill(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Rex/Kill",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RexServer).Kill(ctx, req.(*KillRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Rex_Read_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RexServer).Read(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Rex/Read",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RexServer).Read(ctx, req.(*ReadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Rex_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.Rex",
+	ServiceName: "Rex",
 	HandlerType: (*RexServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Exec",
 			Handler:    _Rex_Exec_Handler,
+		},
+		{
+			MethodName: "ListProcessInfo",
+			Handler:    _Rex_ListProcessInfo_Handler,
+		},
+		{
+			MethodName: "GetProcessInfo",
+			Handler:    _Rex_GetProcessInfo_Handler,
+		},
+		{
+			MethodName: "Kill",
+			Handler:    _Rex_Kill_Handler,
+		},
+		{
+			MethodName: "Read",
+			Handler:    _Rex_Read_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

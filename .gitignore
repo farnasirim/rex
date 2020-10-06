@@ -2,4 +2,7 @@
 /rexd
 /scripts/*
 !/scripts/openssl.cnf
-!/scripts/gen_certs.sh
+!/scripts/*.sh
+!/scripts/README.md
+/data
+/coverage.out
